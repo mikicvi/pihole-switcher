@@ -69,6 +69,10 @@ This app interacts with pihole HTTP API
 
 More info about it can be found in [this](https://discourse.pi-hole.net/t/pi-hole-api/1863) forum post. 
 
+## Development:
+- For development purposes, .env.local file has to be created with ENV params mentioned above.
+- This will require you to have a pihole instance running either bare-metal or in docker.
+- Latest version of: Yarn and Node
 
 ## Notice:
 - This is a work in progress. Any suggestions are more than welcome, as well as feature suggestions and PR's.
