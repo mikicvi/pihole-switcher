@@ -1,0 +1,63 @@
+/* App.css */
+
+/* Global styles for both light and dark modes */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Dropdown styles */
+.dropdown-container {
+  margin-top: 20px;
+}
+
+/* Logo styles */
+.logo {
+  max-width: 20%;
+  max-height: 20%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  margin-top: 20px;
+}
+
+/* Aligned all the way to right*/
+.componentAlignRight {
+  display: flex; 
+  justify-content: flex-end;
+  align-items: center; 
+}
+
+/* Aligned all the way to left, able to be in the same line as the right aligned component*/
+.componentAlignLeft {
+  display: flex; 
+  justify-content: flex-start;
+  align-items: center; 
+}
+
+.flex-container {
+  display: flex;
+}
+
+.flex-child {
+  flex: 1;
+}  
+
+.flex-child:first-child {
+  margin-right: 20px;
+}
+
+.switch {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  transform: scaleX(1.25) scaleY(1.25);
+  padding-left: 39px;
+}
