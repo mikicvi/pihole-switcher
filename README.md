@@ -5,10 +5,6 @@ It's goal was to simplify interaction with pihole, and enable user to switch off
 
 Primary design of the app was mobile oriented, but it looks pretty decent on desktop too.
 
-![Pihole-switcher-preview](https://github.com/mikicvi/pihole-switcher/assets/88291034/35bf1884-8e6d-4c6d-b7b7-089296017785)
-![Pihole-switcher-preview-2](https://github.com/mikicvi/pihole-switcher/assets/88291034/25f47202-5e55-403d-9dcd-f9805efb7c40)
-
-
 ## Features
 - Enable or disable ad blocking service
 - Display current status of the service
@@ -76,6 +72,11 @@ More info about it can be found in [this](https://discourse.pi-hole.net/t/pi-hol
 - For development purposes, .env.local file has to be created with ENV params mentioned above.
 - This will require you to have a pihole instance running either bare-metal or in docker.
 - Latest version of: Yarn and Node
+
+
+# Preview
+![Pihole-switcher-preview](https://github.com/mikicvi/pihole-switcher/assets/88291034/35bf1884-8e6d-4c6d-b7b7-089296017785)
+![Pihole-switcher-preview-2](https://github.com/mikicvi/pihole-switcher/assets/88291034/25f47202-5e55-403d-9dcd-f9805efb7c40)
 
 ## Notice:
 - This is a work in progress. Any suggestions are more than welcome, as well as feature suggestions and PR's.
