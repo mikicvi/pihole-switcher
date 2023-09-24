@@ -5,6 +5,9 @@ It's goal was to simplify interaction with pihole, and enable user to switch off
 
 Primary design of the app was mobile oriented, but it looks pretty decent on desktop too.
 
+![Pihole-switcher-preview](https://github.com/mikicvi/pihole-switcher/assets/88291034/35bf1884-8e6d-4c6d-b7b7-089296017785)
+![Pihole-switcher-preview-2](https://github.com/mikicvi/pihole-switcher/assets/88291034/25f47202-5e55-403d-9dcd-f9805efb7c40)
+
 
 ## Features
 - Enable or disable ad blocking service
