@@ -1,0 +1,36 @@
+{
+    "name": "Pihole Switcher - Frontend for Pihole",
+    "short_name": "Pihole Switcher",
+    "icons": [
+        {
+            "src": "favicon.ico",
+            "sizes": "64x64, 32x32, 24x24, 16x16",
+            "type": "image/x-icon",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "pihole-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "pihole-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": ""
+        },
+        {
+        "src": "pihole.png",
+        "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    
+    "background_color": "#333333",
+    "theme_color": "#333333",
+    "display": "standalone",
+    "start_url": ".",
+    "prefer_related_applications": true
+}
