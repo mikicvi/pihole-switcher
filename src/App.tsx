@@ -33,8 +33,8 @@ const PiholeSwitcher: React.FC = () => {
         { key: "86400", text: "24 hours" },
     ];
 
-    const piHolebaseUrl = (window as any)._env_.REACT_APP_PIHOLE_BASE;
-    const piHoleApiKey = (window as any)._env_.REACT_APP_PIHOLE_KEY;
+    const piHolebaseUrl = process.env.REACT_APP_PIHOLE_BASE || (window as any)._env_.REACT_APP_PIHOLE_BASE;
+    const piHoleApiKey = process.env.REACT_APP_PIHOLE_KEY || (window as any)._env_.REACT_APP_PIHOLE_KEY;
 
     const handleTimeSelect = (
         event: React.FormEvent<HTMLDivElement>,

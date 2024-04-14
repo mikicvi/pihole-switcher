@@ -12,8 +12,8 @@ interface Response {
     top_ads: string[];
 }
 
-const piHolebaseUrl = (window as any)._env_.REACT_APP_PIHOLE_BASE;
-const piHoleApiKey = (window as any)._env_.REACT_APP_PIHOLE_KEY;
+const piHolebaseUrl = process.env.REACT_APP_PIHOLE_BASE || (window as any)._env_.REACT_APP_PIHOLE_BASE;
+const piHoleApiKey = process.env.REACT_APP_PIHOLE_KEY || (window as any)._env_.REACT_APP_PIHOLE_KEY;
 
 const Graph: React.FC = () => {
     const [ apiData, setApiData ] = useState<any>(null);
