@@ -42,7 +42,7 @@ docker run -d -p 3016:80 \
 
     -e REACT_APP_PIHOLE_BASE=< e.g http://192.168.1.1:8080/admin/>: Set the REACT_APP_PIHOLE_BASE environment variable with the specified base URL.
 
-    pihole-switcher-prod:latest: Specify the image name and tag.
+    mikicv/pihole-switcher:latest : Specify the image name and tag.
 ---
 
 If you preffer docker compose instead 
@@ -52,7 +52,7 @@ version: '3'
 
 services:
   pihole-switcher:
-    image: pihole-switcher-prod:latest
+    image: mikicv/pihole-switcher:latest
     ports:
       - "3016:80"
     environment:
@@ -69,7 +69,7 @@ This app interacts with pihole HTTP API
 More info about it can be found in [this](https://discourse.pi-hole.net/t/pi-hole-api/1863) forum post. 
 
 ## Development:
-- For development purposes, .env.local file has to be created with ENV params mentioned above.
+- For development purposes, .env.local file has to be created with ENV params mentioned above in root.
 - This will require you to have a pihole instance running either bare-metal or in docker.
 - Latest version of: Yarn and Node
 
