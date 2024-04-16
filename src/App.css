@@ -5,9 +5,7 @@ body {
 	font-family: Arial, sans-serif;
 	margin: 0;
 	padding: 0;
-	transition:
-		background-color 0.3s,
-		color 0.3s;
+	transition: background-color 0.3s, color 0.3s;
 }
 
 .container {
@@ -94,7 +92,7 @@ body {
 /* Media query for screens larger than 768px */
 @media (min-width: 768px) {
 	.switch {
-		padding-left: 78px;
+		padding-left: 50px;
 	}
 }
 
