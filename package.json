@@ -8,7 +8,7 @@
 		"@fluentui/react-hooks": "^8.6.29",
 		"@fluentui/react-tabs": "^9.3.39",
 		"@fluentui/web-components": "^2.5.16",
-		"@testing-library/jest-dom": "^5.17.0",
+		"@testing-library/jest-dom": "^6.4.2",
 		"@testing-library/react": "^13.4.0",
 		"@testing-library/user-event": "^13.5.0",
 		"@types/jest": "^27.5.2",
@@ -28,7 +28,8 @@
 	"scripts": {
 		"start": "react-scripts start",
 		"build": "react-scripts build",
-		"test": "react-scripts test",
+		"test": "react-scripts test --watchAll --coverage",
+		"citest": "CI=true react-scripts test --coverage",
 		"eject": "react-scripts eject",
 		"lint": "eslint . --ext .ts,.tsx",
 		"format": "npx prettier --write ."
@@ -52,6 +53,34 @@
 		]
 	},
 	"devDependencies": {
-		"@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+		"@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+		"dotenv": "^16.4.5",
+		"jest-mock-axios": "^4.7.3",
+		"ts-jest": "^29.1.2"
+	},
+	"jest": {
+		"transform": {
+			"^.+\\.tsx?$": "ts-jest"
+		},
+		"transformIgnorePatterns": [
+			"/node_modules/(?!axios)"
+		],
+		"coverageThreshold": {
+			"global": {
+				"branches": 70,
+				"functions": 90,
+				"lines": 90,
+				"statements": 90
+			}
+		},
+		"coveragePathIgnorePatterns": [
+			"/node_modules/",
+			"/build",
+			"src/index.tsx",
+			"src/reportWebVitals.ts",
+			"src/setupTests.js",
+			"src/tests/*",
+			"src/*.css"
+		]
 	}
 }
