@@ -30,7 +30,7 @@ jobs:
               run: yarn build
 
             - name: Test
-              run: yarn test --forceExit
+              run: yarn citest
             - uses: sonarsource/sonarqube-scan-action@master
               env:
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

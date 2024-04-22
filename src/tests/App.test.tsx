@@ -4,11 +4,19 @@ import '@testing-library/jest-dom';
 import axios from 'axios';
 import App from '../App';
 import userEvent from '@testing-library/user-event';
+import { Pie } from 'react-chartjs-2';
 jest.mock('axios');
+jest.mock('react-chartjs-2', () => ({
+	Pie: jest.fn(() => null),
+}));
 
 describe('PiholeSwitcher', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		jest.spyOn(console, 'error').mockImplementation(() => {});
+	});
+	afterAll(() => {
+		(console.error as jest.Mock).mockRestore();
 	});
 
 	test('fetches status and sets initial state correctly', async () => {
