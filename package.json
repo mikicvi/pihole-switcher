@@ -75,8 +75,12 @@
 		},
 		"coveragePathIgnorePatterns": [
 			"/node_modules/",
+			"/build",
 			"src/index.tsx",
-			"src/reportWebVitals.ts"
+			"src/reportWebVitals.ts",
+			"src/setupTests.js",
+			"src/tests/*",
+			"src/*.css"
 		]
 	}
 }

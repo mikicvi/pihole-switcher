@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 import axios from 'axios';
 import App from '../App';
 import userEvent from '@testing-library/user-event';
-import { Pie } from 'react-chartjs-2';
+
 jest.mock('axios');
 jest.mock('react-chartjs-2', () => ({
 	Pie: jest.fn(() => null),
