@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
 	Toggle,
 	Dropdown,
@@ -50,7 +50,7 @@ const PiholeSwitcher: React.FC = () => {
 		if (item) setSelectedTime(item.key as string);
 	};
 
-	const fetchStatus = async (): Promise<void> => {
+	const fetchStatus = useCallback(async (): Promise<void> => {
 		let queryString = `${piHolebaseUrl}api.php?status&auth=${piHoleApiKey}`;
 		try {
 			let status = await axios.get(queryString);
@@ -65,7 +65,7 @@ const PiholeSwitcher: React.FC = () => {
 		} catch (error) {
 			console.error('Status Fetch Error:', error);
 		}
-	};
+	}, [piHoleApiKey, piHolebaseUrl]);
 
 	const toggleSwitch = async (): Promise<void> => {
 		if (selectedTime) {
@@ -101,12 +101,13 @@ const PiholeSwitcher: React.FC = () => {
 		setIsDarkMode(!isDarkMode);
 	};
 	const handleStatusClick = () => {
-		// Use window.location.href to navigate to the URL
 		window.open(piHolebaseUrl);
 	};
 	const handleLogoClick = () => {
 		axios.get(`${piHolebaseUrl}api.php?enable&auth=${piHoleApiKey}`);
 		setIsLogoHovered(false);
+		clearInterval(timer);
+		setTimeLeft(0);
 	};
 
 	const handleLogoHover = (event: React.MouseEvent<HTMLImageElement>) => {
@@ -119,10 +120,10 @@ const PiholeSwitcher: React.FC = () => {
 
 	useEffect(() => {
 		fetchStatus();
-		// Set up an interval to fetch status every 10 seconds
+		// Set up an interval to fetch status every 3 seconds
 		const intervalId = setInterval(fetchStatus, 3000);
 		return () => clearInterval(intervalId);
-	}, []);
+	}, [fetchStatus]);
 
 	return (
 		<div className="container">
@@ -189,15 +190,25 @@ const PiholeSwitcher: React.FC = () => {
 					placeholder="Select time"
 					label="Disable Ad Blocking"
 				/>
-				<Toggle
-					className="switch"
-					checked={toggleOn}
-					onChange={toggleSwitch}
-				/>
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+					}}
+				>
+					<Toggle
+						className="switch"
+						checked={toggleOn}
+						onChange={toggleSwitch}
+					/>
 
-				{toggleOn && timeLeft !== null && (
-					<p>Time left: {timeLeft} seconds</p>
-				)}
+					{toggleOn && timeLeft !== null && (
+						<p className="timer" style={{ margin: 0 }}>
+							Time left: {timeLeft} seconds
+						</p>
+					)}
+				</div>
 				<Graph />
 			</ThemeProvider>
 		</div>
