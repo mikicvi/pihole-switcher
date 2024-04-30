@@ -81,9 +81,10 @@ More info about it can be found in [this](https://discourse.pi-hole.net/t/pi-hol
 -   Latest version of: Yarn and Node
 
 # Preview
+<img width="543" alt="switcher-preview-1" src="https://github.com/mikicvi/pihole-switcher/assets/88291034/92129741-993b-45a3-a902-614ddfbc9414">
+<img width="543" alt="switcher-preview-2" src="https://github.com/mikicvi/pihole-switcher/assets/88291034/bf67b1b4-b7e7-480c-be2f-3ff7cabed6ef">
 
-![Pihole-switcher-preview](https://github.com/mikicvi/pihole-switcher/assets/88291034/35bf1884-8e6d-4c6d-b7b7-089296017785)
-![Pihole-switcher-preview-2](https://github.com/mikicvi/pihole-switcher/assets/88291034/25f47202-5e55-403d-9dcd-f9805efb7c40)
+
 
 ## Notice:
 
