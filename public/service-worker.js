@@ -1,7 +1,7 @@
 const CACHE_NAME = 'version-1';
 const urlsToCache = ['index.html', 'offline.html'];
 
-this.addEventListener('install', (event) => {
+addEventListener('install', (event) => {
 	// install event
 	event.waitUntil(
 		caches.open(CACHE_NAME).then((cache) => {
@@ -11,7 +11,7 @@ this.addEventListener('install', (event) => {
 	);
 });
 
-this.addEventListener('fetch', (event) => {
+addEventListener('fetch', (event) => {
 	// fetch event
 	event.respondWith(
 		caches.match(event.request).then((res) => {
@@ -22,7 +22,7 @@ this.addEventListener('fetch', (event) => {
 	);
 });
 
-this.addEventListener('activate', (event) => {
+addEventListener('activate', (event) => {
 	// activate event
 	const cacheWhiteList = [];
 	cacheWhiteList.push(CACHE_NAME);
@@ -33,6 +33,7 @@ this.addEventListener('activate', (event) => {
 				cacheNames.map((cacheName) => {
 					// map through cache names
 					if (!cacheWhiteList.includes(cacheName)) {
+						return caches.delete(cacheName);
 					}
 				})
 			)
