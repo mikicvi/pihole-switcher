@@ -117,6 +117,11 @@ describe('PiholeSwitcher', () => {
 		await waitFor(() =>
 			expect(screen.getByText('PiHole Disabled ❌')).toBeInTheDocument()
 		);
+		await waitFor(() =>
+			expect(
+				screen.getByText('Time left: 0h 4m 59s seconds')
+			).toBeInTheDocument()
+		);
 
 		// click the logo
 		const logo = screen.getByAltText('PiHole Logo');
