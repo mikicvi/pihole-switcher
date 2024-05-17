@@ -22,7 +22,7 @@ const PiholeSwitcher: React.FC = () => {
 	const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 	const [timeLeft, setTimeLeft] = useState<any>(null);
 	const [piholeStatus, setPiholeStatus] = useState<string>('false');
-	let [timer, setTimer] = useState<any>(null);
+	const [timer, setTimer] = useState<any>(null);
 	const [isLogoHovered, setIsLogoHovered] = useState<boolean>(false);
 	const [tooltipPosition, setTooltipPosition] = useState<any>({
 		top: 0,
@@ -76,14 +76,16 @@ const PiholeSwitcher: React.FC = () => {
 				setToggleOn(true);
 				// Start a timer to update timeLeft
 				let timeLeft = parseInt(selectedTime);
-				timer = setInterval(() => {
-					timeLeft--;
-					if (timeLeft <= 0) {
-						clearInterval(timer);
-						setToggleOn(false);
-					}
-					setTimeLeft(prettyPrintTime(timeLeft)); // Update the timeLeft state
-				}, 1000);
+				setTimer(
+					setInterval(() => {
+						timeLeft--;
+						if (timeLeft <= 0) {
+							clearInterval(timer);
+							setToggleOn(false);
+						}
+						setTimeLeft(prettyPrintTime(timeLeft)); // Update the timeLeft state
+					}, 1000)
+				);
 			} catch (error) {
 				console.error('Switch API Error:', error);
 			}
