@@ -80,7 +80,8 @@
 			"src/reportWebVitals.ts",
 			"src/setupTests.js",
 			"src/tests/*",
-			"src/*.css"
+			"src/*.css",
+			"/public/"
 		]
 	}
 }
