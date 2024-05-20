@@ -12,10 +12,10 @@ on:
 
 jobs:
     build-and-push:
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
 
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v2
@@ -31,10 +31,11 @@ jobs:
                   username: ${{ secrets.DOCKER_USERNAME }}
                   password: ${{ secrets.DOCKER_PASSWORD }}
 
-            - name: Install dependencies
+            - name: Install dependencies and build
+              usees: actions/setup-node@v4
+              with:
+                  node-version: 18
               run: yarn install
-
-            - name: Build the project
               run: yarn build
 
             - name: Build and Push Docker Image
@@ -47,7 +48,7 @@ jobs:
 
     create-release:
         needs: build-and-push
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         steps:
             - name: Checkout code
               uses: actions/checkout@v2
