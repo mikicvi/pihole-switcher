@@ -32,7 +32,7 @@ jobs:
                   password: ${{ secrets.DOCKER_PASSWORD }}
 
             - name: Install dependencies and build
-              usees: actions/setup-node@v4
+              uses: actions/setup-node@v4
               with:
                   node-version: 18
               run: yarn install
