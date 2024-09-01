@@ -37,10 +37,10 @@ const PiholeSwitcher: React.FC = () => {
 	];
 
 	const piHolebaseUrl =
-		process.env.REACT_APP_PIHOLE_BASE ||
+		process.env.REACT_APP_PIHOLE_BASE ??
 		(window as any)._env_.REACT_APP_PIHOLE_BASE;
 	const piHoleApiKey =
-		process.env.REACT_APP_PIHOLE_KEY ||
+		process.env.REACT_APP_PIHOLE_KEY ??
 		(window as any)._env_.REACT_APP_PIHOLE_KEY;
 
 	const handleTimeSelect = (
