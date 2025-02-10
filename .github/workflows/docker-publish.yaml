@@ -43,4 +43,4 @@ jobs:
                   context: .
                   push: true
                   tags: mikicv/pihole-switcher:latest
-                  platforms: linux/amd64,linux/386
+                  platforms: linux/amd64,linux/386,linux/arm64,linux/arm/v7,windows/amd64
