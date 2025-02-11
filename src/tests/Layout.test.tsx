@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Layout from '../Layout';
+import '@testing-library/jest-dom';
 
 describe('Layout', () => {
 	const mockProps = {
@@ -27,12 +28,12 @@ describe('Layout', () => {
 
 	test('renders PiHole status correctly when enabled', () => {
 		renderLayout();
-		expect(screen.getByText('PiHole Enabled ✅'));
+		expect(screen.getByText('PiHole Enabled ✅')).toBeInTheDocument();
 	});
 
 	test('renders PiHole status correctly when disabled', () => {
 		renderLayout({ ...mockProps, piholeStatus: 'disabled' });
-		expect(screen.getByText('PiHole Disabled ❌'));
+		expect(screen.getByText('PiHole Disabled ❌')).toBeInTheDocument();
 	});
 
 	test('calls handleStatusClick when status is clicked', () => {
@@ -44,12 +45,14 @@ describe('Layout', () => {
 	test('shows navigation panel when menu button is clicked', () => {
 		renderLayout();
 		fireEvent.click(screen.getByText('☰'));
-		expect(screen.getByText('Navigation'));
+		expect(screen.getByText('Navigation')).toBeInTheDocument();
 	});
 
 	test('shows logo tooltip on hover', () => {
 		renderLayout({ ...mockProps, isLogoHovered: true });
-		expect(screen.getByText('Click to start ad blocking again.'));
+		expect(
+			screen.getByText('Click to start ad blocking again.')
+		).toBeInTheDocument();
 	});
 
 	test('calls logo event handlers', () => {
@@ -69,13 +72,13 @@ describe('Layout', () => {
 	test('renders navigation links', () => {
 		renderLayout();
 		fireEvent.click(screen.getByText('☰'));
-		expect(screen.getByText('Home'));
-		expect(screen.getByText('Filter List'));
+		expect(screen.getByText('Home')).toBeInTheDocument();
+		expect(screen.getByText('Filter List')).toBeInTheDocument();
 	});
 
 	test('renders theme toggle', () => {
 		renderLayout();
 		fireEvent.click(screen.getByText('☰'));
-		expect(screen.getByText('Dark Mode'));
+		expect(screen.getByText('Dark Mode')).toBeInTheDocument();
 	});
 });
