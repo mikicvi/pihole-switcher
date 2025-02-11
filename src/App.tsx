@@ -8,9 +8,11 @@ import {
 } from '@fluentui/react';
 import axios from 'axios';
 import './App.css';
-import piholeLogo from './images/pihole.png';
 import { darkTheme, lightTheme } from './themes/themes';
 import Graph from './Graph';
+import Filterlist from './Filterlist';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Layout from './Layout';
 
 initializeIcons(); // Initialize Fluent UI icons
 
@@ -115,105 +117,106 @@ const PiholeSwitcher: React.FC = () => {
 	const handleLogoHover = (event: React.MouseEvent<HTMLImageElement>) => {
 		const { clientX, clientY } = event;
 		setTooltipPosition({ top: clientY + 15, left: clientX + 100 });
+		setIsLogoHovered(true);
+	};
+
+	const handleLogoMouseLeave = () => {
+		setIsLogoHovered(false);
 	};
 
 	// Define the theme based on the isDarkMode state
 	const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
 	useEffect(() => {
+		let intervalId: NodeJS.Timeout;
 		fetchStatus();
-		// Set up an interval to fetch status every 3 seconds
-		const intervalId = setInterval(fetchStatus, 3000);
+		if (piholeStatus === 'disabled') {
+			intervalId = setInterval(fetchStatus, 5000);
+		} else {
+			intervalId = setInterval(fetchStatus, 10000);
+		}
 		return () => clearInterval(intervalId);
-	}, [fetchStatus]);
+	}, [fetchStatus, piholeStatus]);
 
 	return (
-		<div className="container">
+		<Router>
 			<ThemeProvider applyTo="body" theme={currentTheme}>
-				<div className="flex-container">
-					<div className="flex-child box1">
-						{piholeStatus === 'enabled' ? (
-							<span
-								role="img"
-								aria-label="Enabled"
-								onClick={handleStatusClick}
-								style={{ color: 'green' }}
+				<Routes>
+					<Route
+						path="/"
+						element={
+							<Layout
+								isDarkMode={isDarkMode}
+								handleThemeToggle={handleThemeToggle}
+								piholeStatus={piholeStatus}
+								handleStatusClick={handleStatusClick}
+								handleLogoClick={handleLogoClick}
+								handleLogoHover={handleLogoHover}
+								handleLogoMouseLeave={handleLogoMouseLeave}
+								isLogoHovered={isLogoHovered}
+								tooltipPosition={tooltipPosition}
+								currentTheme={currentTheme}
 							>
-								PiHole Enabled ✅
-							</span>
-						) : (
-							<span
-								role="img"
-								about="Disabled"
-								onClick={handleStatusClick}
-								style={{ color: 'red' }}
-							>
-								PiHole Disabled ❌
-							</span>
-						)}
-					</div>
-					<div className="flex-child box2">
-						<div className="componentAlignRight">
-							<Toggle
-								offText="Light Mode"
-								onClick={handleThemeToggle}
-							/>
-						</div>
-					</div>
-				</div>
-				<img
-					src={piholeLogo}
-					alt="PiHole Logo"
-					className="logo"
-					onClick={handleLogoClick}
-					onMouseEnter={() => setIsLogoHovered(true)}
-					onMouseMove={(event) => handleLogoHover(event)}
-					onMouseLeave={() => setIsLogoHovered(false)}
-				/>
-				{isLogoHovered && (
-					<div
-						className="logoHoverText"
-						style={{
-							top: tooltipPosition.top,
-							left: tooltipPosition.left,
-						}}
-					>
-						Click to start ad blocking again.
-					</div>
-				)}
-				<p>
-					Choose for how long you want to disable the ad blocking
-					service:
-				</p>
-				<Dropdown
-					options={timeOptions}
-					selectedKey={selectedTime}
-					onChange={handleTimeSelect}
-					placeholder="Select time"
-					label="Disable Ad Blocking"
-				/>
-				<div
-					style={{
-						display: 'flex',
-						justifyContent: 'space-between',
-						alignItems: 'center',
-					}}
-				>
-					<Toggle
-						className="switch"
-						checked={toggleOn}
-						onChange={toggleSwitch}
-					/>
+								<p>
+									Choose for how long you want to disable the
+									ad blocking service:
+								</p>
+								<Dropdown
+									options={timeOptions}
+									selectedKey={selectedTime}
+									onChange={handleTimeSelect}
+									placeholder="Select time"
+									label="Disable Ad Blocking"
+								/>
+								<div
+									style={{
+										display: 'flex',
+										justifyContent: 'space-between',
+										alignItems: 'center',
+									}}
+								>
+									<Toggle
+										className="switch"
+										checked={toggleOn}
+										onChange={toggleSwitch}
+									/>
 
-					{toggleOn && timeLeft !== null && (
-						<p className="timer" style={{ margin: 0 }}>
-							Time left: {timeLeft} seconds
-						</p>
-					)}
-				</div>
-				<Graph />
+									{toggleOn && timeLeft !== null && (
+										<p
+											className="timer"
+											style={{ margin: 0 }}
+										>
+											Time left: {timeLeft} seconds
+										</p>
+									)}
+								</div>
+								<Graph />
+							</Layout>
+						}
+					/>
+					<Route
+						path="/filterlist"
+						element={
+							<Layout
+								isDarkMode={isDarkMode}
+								handleThemeToggle={handleThemeToggle}
+								piholeStatus={piholeStatus}
+								handleStatusClick={handleStatusClick}
+								handleLogoClick={handleLogoClick}
+								handleLogoHover={handleLogoHover}
+								handleLogoMouseLeave={handleLogoMouseLeave}
+								isLogoHovered={isLogoHovered}
+								tooltipPosition={tooltipPosition}
+								currentTheme={currentTheme}
+							>
+								<Filterlist />
+							</Layout>
+						}
+					/>
+				</Routes>
 			</ThemeProvider>
-		</div>
+		</Router>
 	);
 };
+
 export default PiholeSwitcher;
