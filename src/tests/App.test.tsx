@@ -27,12 +27,10 @@ describe('PiholeSwitcher', () => {
 		jest.spyOn(axios, 'get').mockResolvedValue({
 			data: mockResponseData,
 		});
-		const { getByText } = render(<App />);
+		render(<App />);
 
-		await waitFor(() =>
-			expect(getByText('PiHole Enabled ✅')).toBeInTheDocument()
-		);
-		expect(getByText('Select time')).toBeInTheDocument();
+		await screen.findByText('PiHole Enabled ✅');
+		expect(screen.getByText('Select time')).toBeInTheDocument();
 	});
 
 	test('displays correct status when disabled', async () => {
@@ -43,10 +41,8 @@ describe('PiholeSwitcher', () => {
 		jest.spyOn(axios, 'get').mockResolvedValue({
 			data: mockResponseData,
 		});
-		const { getByText } = render(<App />);
-		await waitFor(() =>
-			expect(getByText('PiHole Disabled ❌')).toBeInTheDocument()
-		);
+		render(<App />);
+		await screen.findByText('PiHole Disabled ❌');
 	});
 	test('handles error when axios.get throws an error', async () => {
 		const mockedErrorData = {
@@ -98,10 +94,8 @@ describe('PiholeSwitcher', () => {
 			data: mockResponseData,
 		});
 
-		const { getByText } = render(<App />);
-		await waitFor(() =>
-			expect(getByText('PiHole Enabled ✅')).toBeInTheDocument()
-		);
+		render(<App />);
+		await screen.findByText('PiHole Enabled ✅');
 		const dropdown = screen.getByRole('combobox');
 		userEvent.click(dropdown);
 		const option = screen.getByRole('option', { name: '5 minutes' });
@@ -114,14 +108,8 @@ describe('PiholeSwitcher', () => {
 			data: mockDisabledResponseData,
 		});
 		jest.advanceTimersByTime(10000);
-		await waitFor(() =>
-			expect(screen.getByText('PiHole Disabled ❌')).toBeInTheDocument()
-		);
-		await waitFor(() =>
-			expect(
-				screen.getByText('Time left: 0h 4m 59s seconds')
-			).toBeInTheDocument()
-		);
+		await screen.findByText('PiHole Disabled ❌');
+		await screen.findByText('Time left: 0h 4m 59s seconds');
 
 		// click the logo
 		const logo = screen.getByAltText('PiHole Logo');
@@ -130,9 +118,7 @@ describe('PiholeSwitcher', () => {
 			data: mockResponseData,
 		});
 		jest.advanceTimersByTime(5000);
-		await waitFor(() =>
-			expect(screen.getByText('PiHole Enabled ✅')).toBeInTheDocument()
-		);
+		await screen.findByText('PiHole Enabled ✅');
 	});
 
 	test('mouse over and mouse out on logo', async () => {
@@ -143,23 +129,15 @@ describe('PiholeSwitcher', () => {
 		jest.spyOn(axios, 'get').mockResolvedValue({
 			data: mockResponseData,
 		});
-		const { getByText } = render(<App />);
-		await waitFor(() =>
-			expect(getByText('PiHole Enabled ✅')).toBeInTheDocument()
-		);
+		render(<App />);
+		await screen.findByText('PiHole Enabled ✅');
 
 		const logo = screen.getByAltText('PiHole Logo');
 		fireEvent.mouseOver(logo);
-		await waitFor(() =>
-			expect(
-				screen.getByText('Click to start ad blocking again.')
-			).toBeInTheDocument()
-		);
+		await screen.findByText('Click to start ad blocking again.');
 		fireEvent.mouseMove(logo);
 		fireEvent.mouseOut(logo);
-		await waitFor(() =>
-			expect(screen.getByText('PiHole Enabled ✅')).toBeInTheDocument()
-		);
+		await screen.findByText('PiHole Enabled ✅');
 	});
 
 	test('status click opens a new window with the pihole admin page', async () => {
@@ -175,10 +153,8 @@ describe('PiholeSwitcher', () => {
 		const mockWindowOpen = jest.fn();
 		global.window.open = mockWindowOpen;
 
-		const { getByText } = render(<App />);
-		await waitFor(() =>
-			expect(getByText('PiHole Enabled ✅')).toBeInTheDocument()
-		);
+		render(<App />);
+		await screen.findByText('PiHole Enabled ✅');
 
 		const status = screen.getByText('PiHole Enabled ✅');
 		fireEvent.click(status);

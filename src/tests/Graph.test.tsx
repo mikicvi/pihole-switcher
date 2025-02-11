@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import axios from 'axios';
 import Graph from '../Graph';
 
@@ -27,8 +28,8 @@ describe('Graph Component', () => {
 
 	test('renders tabs correctly', async () => {
 		render(<Graph />);
-		expect(screen.getByText('Top Ads'));
-		expect(screen.getByText('Top Queries'));
+		expect(screen.getByText('Top Ads')).toBeInTheDocument();
+		expect(screen.getByText('Top Queries')).toBeInTheDocument();
 	});
 
 	test('shows ads pie chart by default', async () => {
@@ -36,7 +37,9 @@ describe('Graph Component', () => {
 		await waitFor(() => {
 			expect(mockedAxios.get).toHaveBeenCalled();
 		});
-		expect(screen.getByRole('tabpanel', { name: 'Top Ads' }));
+		expect(
+			screen.getByRole('tabpanel', { name: 'Top Ads' })
+		).toBeInTheDocument();
 	});
 
 	test('switches to queries chart when clicking Queries tab', async () => {
@@ -46,7 +49,9 @@ describe('Graph Component', () => {
 		});
 
 		fireEvent.click(screen.getByText('Top Queries'));
-		expect(screen.getByRole('tabpanel', { name: 'Top Queries' }));
+		expect(
+			screen.getByRole('tabpanel', { name: 'Top Queries' })
+		).toBeInTheDocument();
 	});
 
 	test('handles API error gracefully', async () => {

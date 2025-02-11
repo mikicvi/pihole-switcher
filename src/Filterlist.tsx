@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
 	Dropdown,
@@ -44,10 +44,13 @@ const Filterlist: React.FC = () => {
 		},
 	};
 
-	const listApiMap = {
-		whitelist: 'white',
-		blacklist: 'black',
-	};
+	const listApiMap = React.useMemo(
+		() => ({
+			whitelist: 'white',
+			blacklist: 'black',
+		}),
+		[]
+	);
 
 	const columns: IColumn[] = [
 		{
@@ -88,7 +91,7 @@ const Filterlist: React.FC = () => {
 			domain ? `&add=${domain}` : ''
 		}&auth=${piHoleApiKey}`;
 
-	const fetchList = async () => {
+	const fetchList = useCallback(async () => {
 		try {
 			const response = await axios.get(
 				`${piholeBaseUrl}api.php?list=${listApiMap[listType]}&auth=${piHoleApiKey}`
@@ -109,11 +112,11 @@ const Filterlist: React.FC = () => {
 			setIsError(true);
 			setError('Failed to fetch list');
 		}
-	};
+	}, [listApiMap, listType, piHoleApiKey, piholeBaseUrl]);
 
 	useEffect(() => {
 		fetchList();
-	}, [listType]);
+	}, [fetchList, listType]);
 
 	const isValidDomain = (domain: string): boolean => {
 		const domainRegex = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
