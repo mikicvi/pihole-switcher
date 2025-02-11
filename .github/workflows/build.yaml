@@ -18,6 +18,6 @@ jobs:
             - name: Test and coverage
               run: yarn citest
             - name: SonarCloud Scan
-              uses: SonarSource/sonarcloud-github-action@master
+              uses: SonarSource/sonarqube-scan-action@v4
               env:
                   SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}

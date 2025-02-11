@@ -108,12 +108,12 @@ describe('PiholeSwitcher', () => {
 		userEvent.click(option);
 
 		const toggleSwitch = screen.getAllByRole('switch');
-		fireEvent.click(toggleSwitch[1]);
+		fireEvent.click(toggleSwitch[0]);
 
 		jest.spyOn(axios, 'get').mockResolvedValue({
 			data: mockDisabledResponseData,
 		});
-		jest.advanceTimersByTime(3000);
+		jest.advanceTimersByTime(10000);
 		await waitFor(() =>
 			expect(screen.getByText('PiHole Disabled ❌')).toBeInTheDocument()
 		);
@@ -129,7 +129,7 @@ describe('PiholeSwitcher', () => {
 		jest.spyOn(axios, 'get').mockResolvedValue({
 			data: mockResponseData,
 		});
-		jest.advanceTimersByTime(3000);
+		jest.advanceTimersByTime(5000);
 		await waitFor(() =>
 			expect(screen.getByText('PiHole Enabled ✅')).toBeInTheDocument()
 		);

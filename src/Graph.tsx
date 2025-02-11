@@ -3,8 +3,7 @@ import axios from 'axios';
 import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
-import { Tab, TabList } from '@fluentui/react-components';
-import { useTheme } from '@fluentui/react';
+import { useTheme, Pivot, PivotItem } from '@fluentui/react';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -26,10 +25,6 @@ const Graph: React.FC = () => {
 	const [adsGraphData, setAdsGraphData] = useState<any>(null);
 	const [queriesGraphData, setQueriesGraphData] = useState<any>(null);
 	const [selectedTab, setSelectedTab] = useState('topAds');
-
-	const handleTabChange = (e: any, tab: any) => {
-		setSelectedTab(tab.value);
-	};
 
 	const tabStyle = {
 		color: theme.palette.neutralPrimary,
@@ -118,31 +113,33 @@ const Graph: React.FC = () => {
 
 	return (
 		<div className="pie-chart-container-ads">
-			<TabList
+			<Pivot
 				className="tablist"
 				aria-label="Chart Tabs"
-				selectedValue={selectedTab}
-				onTabSelect={handleTabChange}
+				selectedKey={selectedTab}
+				onLinkClick={(item?: PivotItem) => {
+					if (item) {
+						setSelectedTab(item.props.itemKey ?? 'topAds');
+					}
+				}}
 			>
-				<Tab
+				<PivotItem
+					headerText="Top Ads"
+					itemKey="topAds"
 					className={`tab ${
 						selectedTab === 'topAds' ? 'active' : ''
 					}`}
-					value="topAds"
 					style={tabStyle}
-				>
-					Top Ads
-				</Tab>
-				<Tab
+				/>
+				<PivotItem
+					headerText="Top Queries"
+					itemKey="topQueries"
 					className={`tab ${
 						selectedTab === 'topQueries' ? 'active' : ''
 					}`}
-					value="topQueries"
 					style={tabStyle}
-				>
-					Top Queries
-				</Tab>
-			</TabList>
+				/>
+			</Pivot>
 			<hr />
 			{selectedTab === 'topAds' && adsGraphData && (
 				<Pie data={adsGraphData} />

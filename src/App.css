@@ -98,24 +98,13 @@ body {
 
 .tablist {
 	display: flex;
-	justify-content: space-around;
+	justify-content: center;
 	list-style: none;
 	padding: 0;
 	margin-bottom: 5px;
 }
 
-.tablist .tab {
-	padding: 10px 20px;
-	cursor: pointer;
-	transition: background-color 0.3s; /* Add a transition for a smoother hover effect */
-}
-
-.tablist .tab:hover {
-	background-color: #f3f3f31c; /* Lighten the hover background color */
-}
-
-.tablist .tab.active {
-	border-bottom: 2px solid #377e22; /* Reduce the thickness of the active tab border */
-	font-weight: bold;
-	background-color: #f3f3f35c; /* Lighten the active tab background color */
+/* Theme toggle styles */
+.theme-toggle {
+	margin-top: 20px;
 }
