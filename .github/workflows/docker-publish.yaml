@@ -17,7 +17,7 @@ jobs:
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v2
               with:
-                  platforms: all
+                  platforms: linux/amd64,linux/arm64,linux/arm/v7
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v2
@@ -31,7 +31,7 @@ jobs:
             - name: Install dependencies and build
               uses: actions/setup-node@v4
               with:
-                  node-version: 18
+                  node-version: 20
             - name: Build
               run: |
                   yarn install
@@ -43,4 +43,4 @@ jobs:
                   context: .
                   push: true
                   tags: mikicv/pihole-switcher:latest
-                  platforms: linux/amd64,linux/386,linux/arm64,linux/arm/v7,windows/amd64
+                  platforms: linux/amd64,linux/arm64,linux/arm/v7
