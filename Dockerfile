@@ -1,17 +1,18 @@
-# Use an official Nginx runtime as the base image
+# Build stage
+FROM node:16-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Production stage
 FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy the built React app into the Nginx server's default HTML directory
-COPY build/ /usr/share/nginx/html
+# Copy the shell script that will handle env variables
+COPY env.sh /docker-entrypoint.d/40-env-config.sh
+RUN chmod +x /docker-entrypoint.d/40-env-config.sh
 
-# Copy the shell script
-COPY env.sh /usr/share/nginx/html
-
-# Make the script executable
-RUN chmod +x /usr/share/nginx/html/env.sh
-
-# Expose port 80 (the default HTTP port)
 EXPOSE 80
-
-# Start Nginx to serve the app
-CMD ["/bin/sh", "-c", "/usr/share/nginx/html/env.sh && nginx -g 'daemon off;'"]
