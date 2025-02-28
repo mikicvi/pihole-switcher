@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import { useTheme, Pivot, PivotItem } from '@fluentui/react';
+import PiholeApi from './services/piholeApi';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -11,13 +11,6 @@ interface Response {
 	top_queries: string[];
 	top_ads: string[];
 }
-
-const piHolebaseUrl =
-	process.env.REACT_APP_PIHOLE_BASE ||
-	(window as any)._env_.REACT_APP_PIHOLE_BASE;
-const piHoleApiKey =
-	process.env.REACT_APP_PIHOLE_KEY ||
-	(window as any)._env_.REACT_APP_PIHOLE_KEY;
 
 const Graph: React.FC = () => {
 	const theme = useTheme();
@@ -31,13 +24,19 @@ const Graph: React.FC = () => {
 		fontWeight: 'bold',
 	};
 
+	const [piholeApi] = useState(() => {
+		const baseUrl =
+			process.env.REACT_APP_PIHOLE_BASE ||
+			(window as any)._env_.REACT_APP_PIHOLE_BASE;
+		return new PiholeApi(baseUrl);
+	});
+
 	// read in the data from the API
 	const fetchData = async () => {
 		try {
-			const adsData = await axios.get<Response>(
-				`${piHolebaseUrl}api.php?topItems&auth=${piHoleApiKey}`
-			);
-			setApiData(adsData.data);
+			// TODO: Add getTopItems method to PiholeApi class
+			const adsData = await piholeApi.getTopItems();
+			setApiData(adsData);
 		} catch (error) {
 			console.error('Error:', error);
 		}
