@@ -42,7 +42,7 @@ const PiholeSwitcher: React.FC = () => {
 		const baseUrl =
 			process.env.REACT_APP_PIHOLE_BASE ??
 			(window as any)._env_.REACT_APP_PIHOLE_BASE;
-		return new PiholeApi(baseUrl);
+		return PiholeApi.getInstance(baseUrl);
 	});
 
 	const handleTimeSelect = (
@@ -124,11 +124,14 @@ const PiholeSwitcher: React.FC = () => {
 	useEffect(() => {
 		let intervalId: NodeJS.Timeout;
 		fetchStatus();
+
+		// Increase intervals significantly
 		if (piholeStatus === 'disabled') {
-			intervalId = setInterval(fetchStatus, 5000);
+			intervalId = setInterval(fetchStatus, 30000); // 30 seconds when disabled
 		} else {
-			intervalId = setInterval(fetchStatus, 10000);
+			intervalId = setInterval(fetchStatus, 60000); // 60 seconds when enabled
 		}
+
 		return () => clearInterval(intervalId);
 	}, [fetchStatus, piholeStatus]);
 

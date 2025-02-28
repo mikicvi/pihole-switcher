@@ -33,7 +33,7 @@ const Filterlist: React.FC = () => {
 		const baseUrl =
 			process.env.REACT_APP_PIHOLE_BASE ??
 			(window as any)._env_.REACT_APP_PIHOLE_BASE;
-		return new PiholeApi(baseUrl);
+		return PiholeApi.getInstance(baseUrl);
 	});
 
 	const stackTokens: IStackTokens = { childrenGap: 15 };
@@ -43,14 +43,6 @@ const Filterlist: React.FC = () => {
 			marginBottom: 20,
 		},
 	};
-
-	const listApiMap = React.useMemo(
-		() => ({
-			whitelist: 'white',
-			blacklist: 'black',
-		}),
-		[]
-	);
 
 	const columns: IColumn[] = [
 		{
@@ -88,19 +80,21 @@ const Filterlist: React.FC = () => {
 
 	const fetchList = useCallback(async () => {
 		try {
-			const data = await piholeApi.getList(listType);
-			if (Array.isArray(data)) {
-				const domains = data.map((item: any) => ({
+			const response = await piholeApi.getList(listType);
+			// The response is already an array with the correct format from our API class
+			if (response && response.length > 0) {
+				const domains = response.map((item) => ({
 					domain: item.domain,
 					date_modified: item.date_modified,
 					status: item.enabled,
 				}));
-				setList(domains.reverse());
+				setList(domains);
 			} else {
 				setList([]);
 			}
 			setIsError(false);
 		} catch (error) {
+			console.error('Error fetching list:', error);
 			setIsError(true);
 			setError('Failed to fetch list');
 		}

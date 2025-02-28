@@ -12,6 +12,11 @@ interface Response {
 	top_ads: string[];
 }
 
+interface TopDomainsData {
+	domain: string;
+	count: number;
+}
+
 const Graph: React.FC = () => {
 	const theme = useTheme();
 	const [apiData, setApiData] = useState<any>(null);
@@ -28,7 +33,7 @@ const Graph: React.FC = () => {
 		const baseUrl =
 			process.env.REACT_APP_PIHOLE_BASE ||
 			(window as any)._env_.REACT_APP_PIHOLE_BASE;
-		return new PiholeApi(baseUrl);
+		return PiholeApi.getInstance(baseUrl);
 	});
 
 	// read in the data from the API
@@ -49,10 +54,10 @@ const Graph: React.FC = () => {
 	useEffect(() => {
 		if (apiData) {
 			const aGraphData = {
-				labels: Object.keys(apiData.top_ads || {}),
+				labels: Object.keys(apiData.top_ads).slice(0, 10),
 				datasets: [
 					{
-						data: Object.values(apiData.top_ads || {}),
+						data: Object.values(apiData.top_ads).slice(0, 10),
 						backgroundColor: [
 							'rgba(255, 99, 132, 0.2)',
 							'rgba(255, 159, 64, 0.2)',
@@ -81,10 +86,10 @@ const Graph: React.FC = () => {
 	useEffect(() => {
 		if (apiData) {
 			const qGraphData = {
-				labels: Object.keys(apiData.top_queries || {}),
+				labels: Object.keys(apiData.top_queries).slice(0, 10),
 				datasets: [
 					{
-						data: Object.values(apiData.top_queries || {}),
+						data: Object.values(apiData.top_queries).slice(0, 10),
 						backgroundColor: [
 							'rgba(255, 99, 132, 0.2)',
 							'rgba(255, 159, 64, 0.2)',
