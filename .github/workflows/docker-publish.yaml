@@ -5,10 +5,11 @@ on:
         branches:
             - master
         types: [closed]
+    workflow_dispatch:
 
 jobs:
     build-and-push:
-        if: github.event.pull_request.merged == true
+        if: github.event.pull_request.merged == true || github.actor == 'mikicvi'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
