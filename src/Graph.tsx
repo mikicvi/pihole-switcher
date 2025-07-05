@@ -59,7 +59,7 @@ const Graph: React.FC = () => {
 			}
 		};
 		fetchData();
-	}, []);
+	}, [piholeApi]);
 
 	useEffect(() => {
 		if (apiData) {
