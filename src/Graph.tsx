@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import { useTheme, Pivot, PivotItem } from '@fluentui/react';
+import PiholeApi from './services/piholeApi';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -12,12 +12,10 @@ interface Response {
 	top_ads: string[];
 }
 
-const piHolebaseUrl =
-	process.env.REACT_APP_PIHOLE_BASE ||
-	(window as any)._env_.REACT_APP_PIHOLE_BASE;
-const piHoleApiKey =
-	process.env.REACT_APP_PIHOLE_KEY ||
-	(window as any)._env_.REACT_APP_PIHOLE_KEY;
+interface TopDomainsData {
+	domain: string;
+	count: number;
+}
 
 const Graph: React.FC = () => {
 	const theme = useTheme();
@@ -31,13 +29,19 @@ const Graph: React.FC = () => {
 		fontWeight: 'bold',
 	};
 
+	const [piholeApi] = useState(() => {
+		const baseUrl =
+			process.env.REACT_APP_PIHOLE_BASE ||
+			(window as any)._env_.REACT_APP_PIHOLE_BASE;
+		return PiholeApi.getInstance(baseUrl);
+	});
+
 	// read in the data from the API
 	const fetchData = async () => {
 		try {
-			const adsData = await axios.get<Response>(
-				`${piHolebaseUrl}api.php?topItems&auth=${piHoleApiKey}`
-			);
-			setApiData(adsData.data);
+			// TODO: Add getTopItems method to PiholeApi class
+			const adsData = await piholeApi.getTopItems();
+			setApiData(adsData);
 		} catch (error) {
 			console.error('Error:', error);
 		}
@@ -50,10 +54,10 @@ const Graph: React.FC = () => {
 	useEffect(() => {
 		if (apiData) {
 			const aGraphData = {
-				labels: Object.keys(apiData.top_ads || {}),
+				labels: Object.keys(apiData.top_ads).slice(0, 10),
 				datasets: [
 					{
-						data: Object.values(apiData.top_ads || {}),
+						data: Object.values(apiData.top_ads).slice(0, 10),
 						backgroundColor: [
 							'rgba(255, 99, 132, 0.2)',
 							'rgba(255, 159, 64, 0.2)',
@@ -82,10 +86,10 @@ const Graph: React.FC = () => {
 	useEffect(() => {
 		if (apiData) {
 			const qGraphData = {
-				labels: Object.keys(apiData.top_queries || {}),
+				labels: Object.keys(apiData.top_queries).slice(0, 10),
 				datasets: [
 					{
-						data: Object.values(apiData.top_queries || {}),
+						data: Object.values(apiData.top_queries).slice(0, 10),
 						backgroundColor: [
 							'rgba(255, 99, 132, 0.2)',
 							'rgba(255, 159, 64, 0.2)',

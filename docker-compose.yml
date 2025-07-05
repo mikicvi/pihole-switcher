@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+    pihole-switcher:
+        image: mikicv/pihole-switcher:latest
+        ports:
+            - '3016:80'
+        environment:
+            - REACT_APP_PIHOLE_BASE=${REACT_APP_PIHOLE_BASE}
+            - REACT_APP_PIHOLE_PASSWORD=${REACT_APP_PIHOLE_PASSWORD}
+        restart: unless-stopped
+        pull_policy: always
