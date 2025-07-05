@@ -48,8 +48,18 @@ const Graph: React.FC = () => {
 	};
 
 	useEffect(() => {
+		// read in the data from the API
+		const fetchData = async () => {
+			try {
+				// TODO: Add getTopItems method to PiholeApi class
+				const adsData = await piholeApi.getTopItems();
+				setApiData(adsData);
+			} catch (error) {
+				console.error('Error:', error);
+			}
+		};
 		fetchData();
-	}, [fetchData]);
+	}, []);
 
 	useEffect(() => {
 		if (apiData) {
