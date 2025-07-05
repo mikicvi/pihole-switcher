@@ -12,10 +12,10 @@ interface Response {
 	top_ads: string[];
 }
 
-interface TopDomainsData {
-	domain: string;
-	count: number;
-}
+// interface TopDomainsData {
+// 	domain: string;
+// 	count: number;
+// }
 
 const Graph: React.FC = () => {
 	const theme = useTheme();
@@ -49,7 +49,7 @@ const Graph: React.FC = () => {
 
 	useEffect(() => {
 		fetchData();
-	}, []);
+	}, [fetchData]);
 
 	useEffect(() => {
 		if (apiData) {
