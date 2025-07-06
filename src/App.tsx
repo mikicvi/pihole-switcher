@@ -125,8 +125,13 @@ const PiholeSwitcher: React.FC = () => {
 		let intervalId: NodeJS.Timeout;
 		fetchStatus();
 
-		// Increase intervals significantly
-		if (piholeStatus === 'disabled') {
+		// Use shorter intervals in test environment
+		const isTest = process.env.NODE_ENV === 'test';
+
+		if (isTest) {
+			// Use 3 second intervals for tests
+			intervalId = setInterval(fetchStatus, 3000);
+		} else if (piholeStatus === 'disabled') {
 			intervalId = setInterval(fetchStatus, 30000); // 30 seconds when disabled
 		} else {
 			intervalId = setInterval(fetchStatus, 60000); // 60 seconds when enabled

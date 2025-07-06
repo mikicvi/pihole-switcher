@@ -62,7 +62,9 @@
 		"dotenv": "^16.4.5",
 		"identity-obj-proxy": "^3.0.0",
 		"jest": "^29.0.0",
+		"jest-environment-jsdom": "^30.0.4",
 		"jest-mock-axios": "^4.7.3",
+		"jsdom": "^26.1.0",
 		"ts-jest": "^29.2.5"
 	},
 	"jest": {
@@ -72,6 +74,9 @@
 		"transformIgnorePatterns": [
 			"/node_modules/(?!axios)"
 		],
+		"moduleNameMapper": {
+			"\\.(css|less|scss|sass)$": "<rootDir>/src/tests/mocks/styleMock.js"
+		},
 		"coverageThreshold": {
 			"global": {
 				"branches": 70,

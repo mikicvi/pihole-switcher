@@ -48,6 +48,7 @@ const Graph: React.FC = () => {
 		}
 	};
 
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		// read in the data from the API
 		fetchData();
