@@ -37,7 +37,7 @@ jobs:
 
             - name: Build
               run: |
-                  yarn install --frozen-lockfile
+                  yarn install
                   yarn build
 
             - name: Extract metadata
