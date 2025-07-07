@@ -7,16 +7,6 @@ import PiholeApi from './services/piholeApi';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// interface Response {
-// 	top_queries: string[];
-// 	top_ads: string[];
-// }
-
-// interface TopDomainsData {
-// 	domain: string;
-// 	count: number;
-// }
-
 const Graph: React.FC = () => {
 	const theme = useTheme();
 	const [apiData, setApiData] = useState<any>(null);
