@@ -2,5 +2,9 @@
 	"sonarlint.connectedMode.project": {
 		"connectionId": "mikicvi",
 		"projectKey": "mikicvi_pihole-switcher"
+	},
+	"githubLocalActions.containerArchitecture": "linux/amd64",
+	"githubLocalActions.platformOverride": {
+		"ubuntu-latest": "node:22"
 	}
 }

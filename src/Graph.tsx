@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
@@ -6,16 +6,6 @@ import { useTheme, Pivot, PivotItem } from '@fluentui/react';
 import PiholeApi from './services/piholeApi';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
-
-interface Response {
-	top_queries: string[];
-	top_ads: string[];
-}
-
-// interface TopDomainsData {
-// 	domain: string;
-// 	count: number;
-// }
 
 const Graph: React.FC = () => {
 	const theme = useTheme();
@@ -37,7 +27,7 @@ const Graph: React.FC = () => {
 	});
 
 	// read in the data from the API
-	const fetchData = async () => {
+	const fetchData = useCallback(async () => {
 		try {
 			// TODO: Add getTopItems method to PiholeApi class
 			const adsData = await piholeApi.getTopItems();
@@ -45,9 +35,10 @@ const Graph: React.FC = () => {
 		} catch (error) {
 			console.error('Error:', error);
 		}
-	};
+	}, [piholeApi]);
 
 	useEffect(() => {
+		// read in the data from the API
 		fetchData();
 	}, [fetchData]);
 
