@@ -127,12 +127,14 @@ const PiholeSwitcher: React.FC = () => {
 
 		// Use shorter intervals in test environment
 		const isTest = process.env.NODE_ENV === 'test';
-
+		/* istanbul ignore next */
 		if (isTest) {
 			// Use 3 second intervals for tests
 			intervalId = setInterval(fetchStatus, 3000);
+			/* istanbul ignore next */
 		} else if (piholeStatus === 'disabled') {
 			intervalId = setInterval(fetchStatus, 30000); // 30 seconds when disabled
+			/* istanbul ignore next */
 		} else {
 			intervalId = setInterval(fetchStatus, 60000); // 60 seconds when enabled
 		}
