@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import {
 	Dropdown,
 	IDropdownOption,
@@ -15,6 +14,7 @@ import {
 	IStackTokens,
 	IDetailsListStyles,
 } from '@fluentui/react';
+import PiholeApi from './services/piholeApi';
 
 const Filterlist: React.FC = () => {
 	const [listType, setListType] = useState<'whitelist' | 'blacklist'>(
@@ -29,12 +29,12 @@ const Filterlist: React.FC = () => {
 	const [isSuccess, setIsSuccess] = useState<boolean>(false);
 	const [currentPage, setCurrentPage] = useState<number>(1);
 
-	const piHoleApiKey =
-		process.env.REACT_APP_PIHOLE_KEY ??
-		(window as any)._env_.REACT_APP_PIHOLE_KEY;
-	const piholeBaseUrl =
-		process.env.REACT_APP_PIHOLE_BASE ??
-		(window as any)._env_.REACT_APP_PIHOLE_BASE;
+	const [piholeApi] = useState(() => {
+		const baseUrl =
+			process.env.REACT_APP_PIHOLE_BASE ??
+			(window as any)._env_.REACT_APP_PIHOLE_BASE;
+		return PiholeApi.getInstance(baseUrl);
+	});
 
 	const stackTokens: IStackTokens = { childrenGap: 15 };
 	const detailsListStyles: Partial<IDetailsListStyles> = {
@@ -43,14 +43,6 @@ const Filterlist: React.FC = () => {
 			marginBottom: 20,
 		},
 	};
-
-	const listApiMap = React.useMemo(
-		() => ({
-			whitelist: 'white',
-			blacklist: 'black',
-		}),
-		[]
-	);
 
 	const columns: IColumn[] = [
 		{
@@ -86,33 +78,27 @@ const Filterlist: React.FC = () => {
 		},
 	];
 
-	const queryString = (listType: keyof typeof listApiMap, domain?: string) =>
-		`${piholeBaseUrl}api.php?list=${listApiMap[listType]}${
-			domain ? `&add=${domain}` : ''
-		}&auth=${piHoleApiKey}`;
-
 	const fetchList = useCallback(async () => {
 		try {
-			const response = await axios.get(
-				`${piholeBaseUrl}api.php?list=${listApiMap[listType]}&auth=${piHoleApiKey}`
-			);
-			const data = response.data.data;
-			if (Array.isArray(data)) {
-				const domains = data.map((item: any) => ({
+			const response = await piholeApi.getList(listType);
+			// The response is already an array with the correct format from our API class
+			if (response && response.length > 0) {
+				const domains = response.map((item) => ({
 					domain: item.domain,
 					date_modified: item.date_modified,
 					status: item.enabled,
 				}));
-				setList(domains.reverse());
+				setList(domains);
 			} else {
 				setList([]);
 			}
 			setIsError(false);
 		} catch (error) {
+			console.error('Error fetching list:', error);
 			setIsError(true);
 			setError('Failed to fetch list');
 		}
-	}, [listApiMap, listType, piHoleApiKey, piholeBaseUrl]);
+	}, [listType, piholeApi]);
 
 	useEffect(() => {
 		fetchList();
@@ -137,11 +123,8 @@ const Filterlist: React.FC = () => {
 		}
 
 		try {
-			const response = await axios.get(queryString(listType, newDomain));
-			if (
-				response.data.success &&
-				response.data.message.includes('already on the list')
-			) {
+			const response = await piholeApi.addToList(listType, newDomain);
+			if (response.alreadyExists) {
 				setIsError(true);
 				setError('This domain is already in the list');
 				return;

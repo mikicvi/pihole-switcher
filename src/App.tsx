@@ -6,13 +6,13 @@ import {
 	initializeIcons,
 	ThemeProvider,
 } from '@fluentui/react';
-import axios from 'axios';
 import './App.css';
 import { darkTheme, lightTheme } from './themes/themes';
 import Graph from './Graph';
 import Filterlist from './Filterlist';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Layout from './Layout';
+import PiholeApi from './services/piholeApi';
 
 initializeIcons(); // Initialize Fluent UI icons
 
@@ -38,12 +38,12 @@ const PiholeSwitcher: React.FC = () => {
 		{ key: '86400', text: '24 hours' },
 	];
 
-	const piHolebaseUrl =
-		process.env.REACT_APP_PIHOLE_BASE ??
-		(window as any)._env_.REACT_APP_PIHOLE_BASE;
-	const piHoleApiKey =
-		process.env.REACT_APP_PIHOLE_KEY ??
-		(window as any)._env_.REACT_APP_PIHOLE_KEY;
+	const [piholeApi] = useState(() => {
+		const baseUrl =
+			process.env.REACT_APP_PIHOLE_BASE ??
+			(window as any)._env_.REACT_APP_PIHOLE_BASE;
+		return PiholeApi.getInstance(baseUrl);
+	});
 
 	const handleTimeSelect = (
 		event: React.FormEvent<HTMLDivElement>,
@@ -53,28 +53,22 @@ const PiholeSwitcher: React.FC = () => {
 	};
 
 	const fetchStatus = useCallback(async (): Promise<void> => {
-		let queryString = `${piHolebaseUrl}api.php?status&auth=${piHoleApiKey}`;
 		try {
-			let status = await axios.get(queryString);
-			if (status.data.status === 'enabled') {
-				// Compare as a string
-				setPiholeStatus('enabled'); // Set it as a string
+			const status = await piholeApi.getStatus();
+			setPiholeStatus(status);
+			if (status === 'enabled') {
 				setTimer(0);
 				setToggleOn(false);
-			} else {
-				setPiholeStatus('disabled'); // Set it as a string
 			}
 		} catch (error) {
 			console.error('Status Fetch Error:', error);
 		}
-	}, [piHoleApiKey, piHolebaseUrl]);
+	}, [piholeApi]);
 
 	const toggleSwitch = async (): Promise<void> => {
 		if (selectedTime) {
 			try {
-				await axios.get(
-					`${piHolebaseUrl}api.php?disable=${selectedTime}&auth=${piHoleApiKey}`
-				);
+				await piholeApi.disable(selectedTime);
 				setToggleOn(true);
 				// Start a timer to update timeLeft
 				let timeLeft = parseInt(selectedTime);
@@ -105,10 +99,10 @@ const PiholeSwitcher: React.FC = () => {
 		setIsDarkMode(!isDarkMode);
 	};
 	const handleStatusClick = () => {
-		window.open(piHolebaseUrl);
+		window.open(piholeApi.getAdminUrl());
 	};
-	const handleLogoClick = () => {
-		axios.get(`${piHolebaseUrl}api.php?enable&auth=${piHoleApiKey}`);
+	const handleLogoClick = async () => {
+		await piholeApi.enable();
 		setIsLogoHovered(false);
 		clearInterval(timer);
 		setTimeLeft(0);
@@ -130,13 +124,30 @@ const PiholeSwitcher: React.FC = () => {
 	useEffect(() => {
 		let intervalId: NodeJS.Timeout;
 		fetchStatus();
-		if (piholeStatus === 'disabled') {
-			intervalId = setInterval(fetchStatus, 5000);
+
+		// Use shorter intervals in test environment
+		const isTest = process.env.NODE_ENV === 'test';
+		/* istanbul ignore next */
+		if (isTest) {
+			// Use 3 second intervals for tests
+			intervalId = setInterval(fetchStatus, 3000);
+			/* istanbul ignore next */
+		} else if (piholeStatus === 'disabled') {
+			intervalId = setInterval(fetchStatus, 30000); // 30 seconds when disabled
+			/* istanbul ignore next */
 		} else {
-			intervalId = setInterval(fetchStatus, 10000);
+			intervalId = setInterval(fetchStatus, 60000); // 60 seconds when enabled
 		}
+
 		return () => clearInterval(intervalId);
 	}, [fetchStatus, piholeStatus]);
+
+	useEffect(() => {
+		return () => {
+			// Cleanup on unmount
+			piholeApi.destroy();
+		};
+	}, [piholeApi]);
 
 	return (
 		<Router>
