@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import PiholeApi from '../services/piholeApi';
 
 // Mock axios
@@ -128,14 +128,18 @@ describe('PiholeApi', () => {
 	describe('authentication', () => {
 		test('authenticates successfully with valid credentials', async () => {
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 
 			const status = await piholeApi.getStatus();
 
 			expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth', {
 				password: 'test-password',
 			});
-			expect(mockAxiosInstance.interceptors.request.use).toHaveBeenCalled();
+			expect(
+				mockAxiosInstance.interceptors.request.use
+			).toHaveBeenCalled();
 			expect(status).toBe('enabled');
 		});
 
@@ -195,7 +199,9 @@ describe('PiholeApi', () => {
 
 		test('sets up session refresh after authentication', async () => {
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 
 			await piholeApi.getStatus();
 
@@ -217,13 +223,17 @@ describe('PiholeApi', () => {
 	describe('getStatus', () => {
 		beforeEach(async () => {
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 		});
 
 		test('returns blocking status', async () => {
 			const status = await piholeApi.getStatus();
 			expect(status).toBe('enabled');
-			expect(mockAxiosInstance.get).toHaveBeenCalledWith('/dns/blocking/status');
+			expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+				'/dns/blocking/status'
+			);
 		});
 
 		test('authenticates before making request', async () => {
@@ -333,7 +343,9 @@ describe('PiholeApi', () => {
 		});
 
 		test('gets whitelist', async () => {
-			mockAxiosInstance.get.mockResolvedValueOnce(mockDomainsListResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockDomainsListResponse
+			);
 
 			const result = await piholeApi.getList('whitelist');
 
@@ -357,7 +369,9 @@ describe('PiholeApi', () => {
 		});
 
 		test('gets blacklist', async () => {
-			mockAxiosInstance.get.mockResolvedValueOnce(mockDomainsListResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockDomainsListResponse
+			);
 
 			const result = await piholeApi.getList('blacklist');
 
@@ -387,9 +401,14 @@ describe('PiholeApi', () => {
 		});
 
 		test('adds domain to whitelist', async () => {
-			mockAxiosInstance.post.mockResolvedValueOnce(mockDomainsListResponse);
+			mockAxiosInstance.post.mockResolvedValueOnce(
+				mockDomainsListResponse
+			);
 
-			const result = await piholeApi.addToList('whitelist', 'newdomain.com');
+			const result = await piholeApi.addToList(
+				'whitelist',
+				'newdomain.com'
+			);
 
 			expect(result).toEqual({ alreadyExists: false });
 
@@ -411,9 +430,14 @@ describe('PiholeApi', () => {
 		});
 
 		test('adds domain to blacklist', async () => {
-			mockAxiosInstance.post.mockResolvedValueOnce(mockDomainsListResponse);
+			mockAxiosInstance.post.mockResolvedValueOnce(
+				mockDomainsListResponse
+			);
 
-			const result = await piholeApi.addToList('blacklist', 'baddomain.com');
+			const result = await piholeApi.addToList(
+				'blacklist',
+				'baddomain.com'
+			);
 
 			expect(result).toEqual({ alreadyExists: false });
 
@@ -445,7 +469,10 @@ describe('PiholeApi', () => {
 
 			mockAxiosInstance.post.mockRejectedValueOnce(uniqueConstraintError);
 
-			const result = await piholeApi.addToList('whitelist', 'existing.com');
+			const result = await piholeApi.addToList(
+				'whitelist',
+				'existing.com'
+			);
 
 			expect(result).toEqual({ alreadyExists: true });
 		});
@@ -471,7 +498,9 @@ describe('PiholeApi', () => {
 		test('logs out successfully', async () => {
 			// First authenticate
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 			await piholeApi.getStatus();
 
 			// Then logout
@@ -479,23 +508,31 @@ describe('PiholeApi', () => {
 			await piholeApi.logout();
 
 			expect(mockAxiosInstance.delete).toHaveBeenCalledWith('/auth');
-			expect(mockAxiosInstance.interceptors.request.eject).toHaveBeenCalledWith(1);
+			expect(
+				mockAxiosInstance.interceptors.request.eject
+			).toHaveBeenCalledWith(1);
 		});
 
 		test('handles logout error gracefully', async () => {
 			// First authenticate
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 			await piholeApi.getStatus();
 
 			// Then fail logout - the finally block should still clean up
-			mockAxiosInstance.delete.mockRejectedValueOnce(new Error('Logout failed'));
-			
+			mockAxiosInstance.delete.mockRejectedValueOnce(
+				new Error('Logout failed')
+			);
+
 			// The logout method will throw but should still clean up
 			await expect(piholeApi.logout()).rejects.toThrow('Logout failed');
-			
+
 			// Should still clean up internal state
-			expect(mockAxiosInstance.interceptors.request.eject).toHaveBeenCalledWith(1);
+			expect(
+				mockAxiosInstance.interceptors.request.eject
+			).toHaveBeenCalledWith(1);
 		});
 	});
 
@@ -503,7 +540,9 @@ describe('PiholeApi', () => {
 		test('cleans up resources', async () => {
 			// First authenticate to set up resources
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 			await piholeApi.getStatus();
 
 			// Mock logout for destroy
@@ -511,7 +550,9 @@ describe('PiholeApi', () => {
 
 			piholeApi.destroy();
 
-			expect(mockAxiosInstance.interceptors.request.eject).toHaveBeenCalledWith(1);
+			expect(
+				mockAxiosInstance.interceptors.request.eject
+			).toHaveBeenCalledWith(1);
 		});
 	});
 
@@ -519,14 +560,20 @@ describe('PiholeApi', () => {
 		test('session refresh clears session on failure', async () => {
 			// First authenticate
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 			await piholeApi.getStatus();
 
 			// Access private method to test session refresh failure directly
-			const refreshSessionMethod = (piholeApi as any).refreshSession.bind(piholeApi);
-			
+			const refreshSessionMethod = (piholeApi as any).refreshSession.bind(
+				piholeApi
+			);
+
 			// Set up failure for session refresh
-			mockAxiosInstance.get.mockRejectedValueOnce(new Error('Session refresh failed'));
+			mockAxiosInstance.get.mockRejectedValueOnce(
+				new Error('Session refresh failed')
+			);
 
 			// Call refresh session directly
 			await refreshSessionMethod();
@@ -541,12 +588,14 @@ describe('PiholeApi', () => {
 		test('uses process.env password when available', async () => {
 			// This test verifies the normal case where process.env has the password
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 
 			await piholeApi.getStatus();
 
 			expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth', {
-				password: 'test-password',  // From our beforeEach setup
+				password: 'test-password', // From our beforeEach setup
 			});
 		});
 	});
@@ -554,8 +603,10 @@ describe('PiholeApi', () => {
 	describe('edge cases and error handling', () => {
 		test('handles authentication cooldown', async () => {
 			// Make first auth fail
-			mockAxiosInstance.post.mockRejectedValueOnce(new Error('First auth failed'));
-			
+			mockAxiosInstance.post.mockRejectedValueOnce(
+				new Error('First auth failed')
+			);
+
 			try {
 				await piholeApi.getStatus();
 			} catch (error) {
@@ -564,13 +615,15 @@ describe('PiholeApi', () => {
 
 			// Immediately try again - should respect cooldown
 			const startTime = Date.now();
-			
+
 			// Second auth should succeed after cooldown
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 
 			jest.advanceTimersByTime(2100); // Advance past cooldown
-			
+
 			const status = await piholeApi.getStatus();
 			expect(status).toBe('enabled');
 		});
@@ -578,7 +631,7 @@ describe('PiholeApi', () => {
 		test('handles missing session ID in logout', async () => {
 			// Call logout without being authenticated
 			await piholeApi.logout();
-			
+
 			// Should not call delete endpoint
 			expect(mockAxiosInstance.delete).not.toHaveBeenCalled();
 		});
@@ -586,7 +639,9 @@ describe('PiholeApi', () => {
 		test('handles interceptor cleanup', async () => {
 			// First authenticate to create interceptor
 			mockAxiosInstance.post.mockResolvedValueOnce(mockAuthResponse);
-			mockAxiosInstance.get.mockResolvedValueOnce(mockBlockingStatusResponse);
+			mockAxiosInstance.get.mockResolvedValueOnce(
+				mockBlockingStatusResponse
+			);
 			await piholeApi.getStatus();
 
 			// Clear all mock calls to track subsequent calls
@@ -596,7 +651,9 @@ describe('PiholeApi', () => {
 			await piholeApi.logout();
 
 			// Should have ejected the interceptor
-			expect(mockAxiosInstance.interceptors.request.eject).toHaveBeenCalledWith(1);
+			expect(
+				mockAxiosInstance.interceptors.request.eject
+			).toHaveBeenCalledWith(1);
 		});
 	});
 });

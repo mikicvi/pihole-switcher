@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './App.css';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
@@ -37,8 +37,7 @@ const Graph: React.FC = () => {
 	});
 
 	// read in the data from the API
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const fetchData = async () => {
+	const fetchData = useCallback(async () => {
 		try {
 			// TODO: Add getTopItems method to PiholeApi class
 			const adsData = await piholeApi.getTopItems();
@@ -46,13 +45,12 @@ const Graph: React.FC = () => {
 		} catch (error) {
 			console.error('Error:', error);
 		}
-	};
+	}, [piholeApi]);
 
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		// read in the data from the API
 		fetchData();
-	}, [piholeApi]);
+	}, [fetchData]);
 
 	useEffect(() => {
 		if (apiData) {
