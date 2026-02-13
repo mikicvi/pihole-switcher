@@ -6,8 +6,8 @@ on:
     pull_request:
         types: [opened, synchronize, reopened]
 jobs:
-    sonarcloud:
-        name: SonarCloud
+    pipeline:
+        name: Pipeline
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
