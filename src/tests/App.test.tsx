@@ -153,10 +153,8 @@ describe('PiholeSwitcher', () => {
 		fireEvent.click(dropdown);
 
 		// Find and click on "5 minutes" option
-		await waitFor(() => {
-			const option = screen.getByText('5 minutes');
-			fireEvent.click(option);
-		});
+		const option = await screen.findByText('5 minutes');
+		fireEvent.click(option);
 
 		// Click the toggle switch to stop ad blocking
 		const toggle = screen.getByRole('switch');
@@ -216,10 +214,8 @@ describe('PiholeSwitcher', () => {
 		fireEvent.click(dropdown);
 
 		// Find and click on "5 minutes" option
-		await waitFor(() => {
-			const option = screen.getByText('5 minutes');
-			fireEvent.click(option);
-		});
+		const option = await screen.findByText('5 minutes');
+		fireEvent.click(option);
 
 		// Click the toggle switch to disable
 		const toggle = screen.getByRole('switch');
@@ -284,10 +280,8 @@ describe('PiholeSwitcher', () => {
 		fireEvent.click(dropdown);
 
 		// Find and click on "5 minutes" option
-		await waitFor(() => {
-			const option = screen.getByText('5 minutes');
-			fireEvent.click(option);
-		});
+		const option = await screen.findByText('5 minutes');
+		fireEvent.click(option);
 
 		// Click the toggle switch to disable
 		const toggle = screen.getByRole('switch');
@@ -319,10 +313,8 @@ describe('PiholeSwitcher', () => {
 		fireEvent.click(dropdown);
 
 		// Find and click on "15 minutes" option (this option exists)
-		await waitFor(() => {
-			const option = screen.getByText('15 minutes');
-			fireEvent.click(option);
-		});
+		const option = await screen.findByText('15 minutes');
+		fireEvent.click(option);
 
 		// Click the toggle switch to disable
 		const toggle = screen.getByRole('switch');
@@ -463,10 +455,8 @@ describe('PiholeSwitcher', () => {
 		fireEvent.click(dropdown);
 
 		// Use 60 minutes option for testing different time formats
-		await waitFor(() => {
-			const option = screen.getByText('60 minutes');
-			fireEvent.click(option);
-		});
+		const option = await screen.findByText('60 minutes');
+		fireEvent.click(option);
 
 		// Verify the dropdown shows the selected option
 		await waitFor(() => {
@@ -521,10 +511,8 @@ describe('PiholeSwitcher', () => {
 		const dropdown = screen.getByRole('combobox');
 		fireEvent.click(dropdown);
 
-		await waitFor(() => {
-			const option = screen.getByText('5 minutes');
-			fireEvent.click(option);
-		});
+		const option = await screen.findByText('5 minutes');
+		fireEvent.click(option);
 
 		const toggle = screen.getByRole('switch');
 		fireEvent.click(toggle);

@@ -423,10 +423,8 @@ describe('Filterlist Component', () => {
 		});
 
 		// Click on page 2
-		await waitFor(() => {
-			const pageButton2 = screen.getByText('2');
-			fireEvent.click(pageButton2);
-		});
+		const pageButton2 = await screen.findByText('2');
+		fireEvent.click(pageButton2);
 
 		// Page 2 should be active/primary - check for proper button structure
 		await waitFor(() => {
