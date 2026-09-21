@@ -7,6 +7,10 @@ on:
         types: [closed]
     workflow_dispatch:
 
+permissions:
+    contents: read
+    actions: write
+
 jobs:
     build-and-push:
         if: github.event.pull_request.merged == true || github.actor == 'mikicvi'
@@ -52,7 +56,7 @@ jobs:
                       type=raw,value=latest,enable={{is_default_branch}}
 
             - name: Build and Push Docker Image
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   context: .
                   push: true
