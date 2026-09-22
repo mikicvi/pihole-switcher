@@ -2,6 +2,7 @@
 interface Window {
 	_env_?: {
 		REACT_APP_PIHOLE_BASE: string;
+		REACT_APP_PIHOLE_ADMIN?: string;
 		[key: string]: any;
 	};
 }

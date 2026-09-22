@@ -78,7 +78,7 @@ const Filterlist: React.FC = () => {
 		},
 	];
 
-	const fetchList = useCallback(async () => {
+	const fetchList = useCallback(async (): Promise<boolean> => {
 		try {
 			const response = await piholeApi.getList(listType);
 			// The response is already an array with the correct format from our API class
@@ -93,10 +93,12 @@ const Filterlist: React.FC = () => {
 				setList([]);
 			}
 			setIsError(false);
+			return true;
 		} catch (error) {
 			console.error('Error fetching list:', error);
 			setIsError(true);
 			setError('Failed to fetch list');
+			return false;
 		}
 	}, [listType, piholeApi]);
 
@@ -130,14 +132,17 @@ const Filterlist: React.FC = () => {
 				return;
 			}
 
-			setList([
-				{
-					domain: newDomain,
-					date_modified: Date.now() / 1000,
-					status: true,
-				},
-				...list,
-			]);
+			// Re-fetch from the server so the table shows the domain with
+			// its real date_modified instead of a locally guessed value.
+			const refreshed = await fetchList();
+			if (!refreshed) {
+				// The add itself succeeded (no exception above), but the
+				// list refresh failed - surface that instead of a plain
+				// success with a stale table.
+				setIsError(true);
+				setError('Domain added, but refreshing the list failed');
+				return;
+			}
 			setNewDomain('');
 			setIsError(false);
 			setIsSuccess(true);

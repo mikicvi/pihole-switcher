@@ -303,6 +303,45 @@ describe('PiholeApi', () => {
 			const adminUrl = apiWithSlash.getAdminUrl();
 			expect(adminUrl).toBe('http://localhost/admin');
 		});
+
+		test('returns origin-based admin URL for relative (proxied) base', () => {
+			// The outer beforeEach created the singleton with an absolute
+			// base - reset it so this test really exercises /api.
+			(PiholeApi as any).instance = null;
+			const proxied = PiholeApi.getInstance('/api');
+			const adminUrl = proxied.getAdminUrl();
+			expect(adminUrl).toBe(window.location.origin + '/admin');
+		});
+
+		test('uses REACT_APP_PIHOLE_ADMIN from env when set', () => {
+			(PiholeApi as any).instance = null;
+			(window as any)._env_ = {
+				REACT_APP_PIHOLE_BASE: '/api',
+				REACT_APP_PIHOLE_ADMIN: 'http://192.168.1.12:1010/admin/',
+			};
+			try {
+				const proxied = PiholeApi.getInstance('/api');
+				const adminUrl = proxied.getAdminUrl();
+				expect(adminUrl).toBe('http://192.168.1.12:1010/admin');
+			} finally {
+				delete (window as any)._env_;
+			}
+		});
+
+		test('ignores unreplaced placeholder values from static env-config.js', () => {
+			(PiholeApi as any).instance = null;
+			(window as any)._env_ = {
+				REACT_APP_PIHOLE_BASE: '/api',
+				REACT_APP_PIHOLE_ADMIN: '$REACT_APP_PIHOLE_ADMIN',
+			};
+			try {
+				const proxied = PiholeApi.getInstance('/api');
+				const adminUrl = proxied.getAdminUrl();
+				expect(adminUrl).toBe(window.location.origin + '/admin');
+			} finally {
+				delete (window as any)._env_;
+			}
+		});
 	});
 
 	describe('getTopItems', () => {
