@@ -11,9 +11,22 @@ permissions:
     contents: read
     actions: write
 
+concurrency:
+    group: docker-publish-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: false
+
 jobs:
     build-and-push:
-        if: github.event.pull_request.merged == true || github.actor == 'mikicvi'
+        # The push-to-master run handles default-branch merges; the pull_request
+        # event only fires the build for non-default-branch merges. Otherwise a
+        # merge triggers 2-3 concurrent runs of this workflow that race on the
+        # GHA cache reservation ("failed to reserve cache") and push the same tags.
+        if: >-
+            github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+            (github.event_name == 'pull_request' &&
+                github.event.pull_request.merged == true &&
+                github.base_ref != 'master')
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
