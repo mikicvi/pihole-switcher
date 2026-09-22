@@ -1,6 +1,9 @@
 name: Build and Push Docker Images
 
 on:
+    push:
+        branches:
+            - master
     pull_request:
         branches:
             - master
@@ -11,9 +14,23 @@ permissions:
     contents: read
     actions: write
 
+concurrency:
+    group: docker-publish-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: false
+
 jobs:
     build-and-push:
-        if: github.event.pull_request.merged == true || github.actor == 'mikicvi'
+        # Merges to master are published by the explicit push run; GitHub also
+        # synthesizes pull_request/dynamic runs on merge, which the gate skips
+        # so exactly one run executes (concurrent runs race on the GHA cache
+        # reservation and fail with "failed to reserve cache"). Manual dispatch
+        # keeps the original owner-only authorization.
+        if: >-
+            (github.event_name == 'workflow_dispatch' && github.actor == 'mikicvi') ||
+            (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+            (github.event_name == 'pull_request' &&
+                github.event.pull_request.merged == true &&
+                github.base_ref != 'master')
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
