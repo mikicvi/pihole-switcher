@@ -6,7 +6,9 @@ services:
         ports:
             - '3016:80'
         environment:
-            - REACT_APP_PIHOLE_BASE=${REACT_APP_PIHOLE_BASE}
+            - REACT_APP_PIHOLE_BASE=${REACT_APP_PIHOLE_BASE:-/api}
             - REACT_APP_PIHOLE_PASSWORD=${REACT_APP_PIHOLE_PASSWORD}
+            - PIHOLE_PROXY_TARGET=${PIHOLE_PROXY_TARGET:-172.17.0.1}
+            - REACT_APP_PIHOLE_ADMIN=${REACT_APP_PIHOLE_ADMIN:-}
         restart: unless-stopped
         pull_policy: always

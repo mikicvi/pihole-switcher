@@ -216,8 +216,12 @@ describe('Filterlist Component', () => {
 			expect(mockPiholeApiInstance.getList).toHaveBeenCalledTimes(2);
 		});
 
+		// The second (server) response must actually be rendered, not just
+		// fetched - newdomain.com comes from the refetched list.
 		await waitFor(() => {
-			expect(screen.getByTestId('details-list')).toBeInTheDocument();
+			expect(
+				screen.getByText(/"domain":"newdomain.com"/)
+			).toBeInTheDocument();
 		});
 	});
 

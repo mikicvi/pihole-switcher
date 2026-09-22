@@ -297,8 +297,18 @@ class PiholeApi {
 				_env_?: Record<string, string | undefined>;
 			}
 		)._env_;
-		const base = env && env.REACT_APP_PIHOLE_ADMIN;
-		if (base) {
+		let base = env && env.REACT_APP_PIHOLE_ADMIN;
+		if (!base) {
+			// Build-time value (dev server via .env.local)
+			base = process.env.REACT_APP_PIHOLE_ADMIN;
+		}
+		// Ignore unreplaced $VARIABLE placeholders (public/env-config.js
+		// ships with literal '$REACT_APP_PIHOLE_ADMIN' outside the
+		// production container, where env.sh substitutes them at startup).
+		if (base && /^\$[A-Z_]+$/.test(base)) {
+			base = undefined;
+		}
+		if (base && base.length > 0) {
 			return base.replace(/\/$/, '');
 		}
 		if (/^https?:\/\//.test(this.baseUrl)) {
