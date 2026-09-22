@@ -130,14 +130,9 @@ const Filterlist: React.FC = () => {
 				return;
 			}
 
-			setList([
-				{
-					domain: newDomain,
-					date_modified: Date.now() / 1000,
-					status: true,
-				},
-				...list,
-			]);
+			// Re-fetch from the server so the table shows the domain with
+			// its real date_modified instead of a locally guessed value.
+			await fetchList();
 			setNewDomain('');
 			setIsError(false);
 			setIsSuccess(true);

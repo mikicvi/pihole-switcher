@@ -292,7 +292,21 @@ class PiholeApi {
 	}
 
 	getAdminUrl(): string {
-		return this.baseUrl.replace(/\/api\/?$/, '/admin');
+		const env = (
+			window as unknown as {
+				_env_?: Record<string, string | undefined>;
+			}
+		)._env_;
+		const base = env && env.REACT_APP_PIHOLE_ADMIN;
+		if (base) {
+			return base.replace(/\/$/, '');
+		}
+		if (/^https?:\/\//.test(this.baseUrl)) {
+			return this.baseUrl.replace(/\/api\/?$/, '/admin');
+		}
+		// Relative (proxied) base: serve the admin UI from the app's own
+		// origin.
+		return window.location.origin + '/admin';
 	}
 
 	async getTopItems(): Promise<TopItems> {

@@ -303,6 +303,26 @@ describe('PiholeApi', () => {
 			const adminUrl = apiWithSlash.getAdminUrl();
 			expect(adminUrl).toBe('http://localhost/admin');
 		});
+
+		test('returns origin-based admin URL for relative (proxied) base', () => {
+			const proxied = PiholeApi.getInstance('/api');
+			const adminUrl = proxied.getAdminUrl();
+			expect(adminUrl).toBe(window.location.origin + '/admin');
+		});
+
+		test('uses REACT_APP_PIHOLE_ADMIN from env when set', () => {
+			(window as any)._env_ = {
+				REACT_APP_PIHOLE_BASE: '/api',
+				REACT_APP_PIHOLE_ADMIN: 'http://192.168.1.12:1010/admin/',
+			};
+			try {
+				const proxied = PiholeApi.getInstance('/api');
+				const adminUrl = proxied.getAdminUrl();
+				expect(adminUrl).toBe('http://192.168.1.12:1010/admin');
+			} finally {
+				delete (window as any)._env_;
+			}
+		});
 	});
 
 	describe('getTopItems', () => {

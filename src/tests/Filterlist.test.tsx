@@ -178,6 +178,49 @@ describe('Filterlist Component', () => {
 		});
 	});
 
+	test('refetches list from server after successful add', async () => {
+		mockPiholeApiInstance.getList
+			.mockResolvedValueOnce([
+				{
+					domain: 'example.com',
+					date_modified: 1609459200,
+					enabled: true,
+				},
+			])
+			.mockResolvedValueOnce([
+				{
+					domain: 'example.com',
+					date_modified: 1609459200,
+					enabled: true,
+				},
+				{
+					domain: 'newdomain.com',
+					date_modified: 1609500000,
+					enabled: true,
+				},
+			]);
+
+		render(<Filterlist />);
+
+		await waitFor(() => {
+			expect(mockPiholeApiInstance.getList).toHaveBeenCalledTimes(1);
+		});
+
+		const domainInput = screen.getByLabelText('Domain');
+		const addButton = screen.getByRole('button', { name: 'Add' });
+
+		fireEvent.change(domainInput, { target: { value: 'newdomain.com' } });
+		fireEvent.click(addButton);
+
+		await waitFor(() => {
+			expect(mockPiholeApiInstance.getList).toHaveBeenCalledTimes(2);
+		});
+
+		await waitFor(() => {
+			expect(screen.getByTestId('details-list')).toBeInTheDocument();
+		});
+	});
+
 	test('shows error for empty domain', async () => {
 		render(<Filterlist />);
 
