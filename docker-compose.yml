@@ -1,14 +1,15 @@
-version: '3.8'
-
 services:
     pihole-switcher:
         image: mikicv/pihole-switcher:latest
         ports:
-            - '3016:80'
+            - '3016:3000'
         environment:
-            - REACT_APP_PIHOLE_BASE=${REACT_APP_PIHOLE_BASE:-/api}
-            - REACT_APP_PIHOLE_PASSWORD=${REACT_APP_PIHOLE_PASSWORD}
+            # FTL host; default assumes Docker bridge gateway to the host net
             - PIHOLE_PROXY_TARGET=${PIHOLE_PROXY_TARGET:-172.17.0.1}
-            - REACT_APP_PIHOLE_ADMIN=${REACT_APP_PIHOLE_ADMIN:-}
+            - PIHOLE_FTL_PORT=${PIHOLE_FTL_PORT:-1010}
+            # Required: the plain Pi-hole FTL API password (server-side only)
+            - PIHOLE_API_PASSWORD=${PIHOLE_API_PASSWORD}
+            # Optional: public admin URL linked from the UI
+            - PUBLIC_PIHOLE_ADMIN=${PUBLIC_PIHOLE_ADMIN:-}
         restart: unless-stopped
         pull_policy: always

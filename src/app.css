@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+	--bg: #f5f6f8;
+	--surface: #ffffff;
+	--surface-2: #eef0f3;
+	--border: #d9dde3;
+	--text: #1a1d21;
+	--text-muted: #5c6672;
+	--accent: #1a63c9;
+	--accent-soft: #e3edfb;
+	--good: #1e8e5a;
+	--good-soft: #ddefe6;
+	--bad: #c43d3d;
+	--bad-soft: #f6dede;
+	--warn: #b07d10;
+	--warn-soft: #f5ead2;
+}
+
+.dark {
+	--bg: #0d1117;
+	--surface: #151b23;
+	--surface-2: #1d2530;
+	--border: #2a3441;
+	--text: #e6ebf1;
+	--text-muted: #8b98a5;
+	--accent: #4d94ff;
+	--accent-soft: #17293f;
+	--good: #34c47c;
+	--good-soft: #12301f;
+	--bad: #e5584f;
+	--bad-soft: #3a1d1c;
+	--warn: #d9a83c;
+	--warn-soft: #33280f;
+}
+
+html {
+	background: var(--bg);
+	color: var(--text);
+	font-family:
+		system-ui,
+		-apple-system,
+		'SSegoe UI',
+		Roboto,
+		'Helvetica Neue',
+		sans-serif;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--text);
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: 100% 0;
+	}
+	100% {
+		background-position: -100% 0;
+	}
+}
+
+.skeleton {
+	background: linear-gradient(90deg, var(--surface-2) 30%, var(--border) 50%, var(--surface-2) 70%);
+	background-size: 200% 100%;
+	animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}

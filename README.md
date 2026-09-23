@@ -19,11 +19,13 @@ Primary design of the app was mobile oriented, but it looks pretty decent on des
 
 ## Setting up
 
-This project was built to be served from docker.
+The app is a single SvelteKit (Node) service: it serves the UI **and** proxies
+the Pi-hole FTL API. The API password lives only in the server process — it is
+never shipped to the browser.
 
 -   To build a docker image execute from root of project:
 
-`yarn install && yarn build`
+`npm install && npm run build`
 
 `docker build -t pihole-switcher-prod .`
 
@@ -32,60 +34,41 @@ On linux, image can be exported like:
 `docker save pihole-switcher-prod:latest | gzip > pihole-switcher-prod.tar.gz`
 
 ```
-docker run -d -p 3016:80 \
-  -e REACT_APP_PIHOLE_PASSWORD=<pihole password> \
-  -e REACT_APP_PIHOLE_BASE=/api \
+docker run -d -p 3016:3000 \
+  -e PIHOLE_API_PASSWORD=<pihole api password> \
   -e PIHOLE_PROXY_TARGET=172.17.0.1 \
-  -e REACT_APP_PIHOLE_ADMIN=http://192.168.1.12:1010/admin \
+  -e PUBLIC_PIHOLE_ADMIN=http://192.168.1.12:1010/admin/login \
   pihole-switcher-prod:latest
 ```
 
-The recommended setup is to proxy the Pi-hole API through the app's own origin (the `REACT_APP_PIHOLE_BASE=/api` + `PIHOLE_PROXY_TARGET` combination above). The container's nginx then serves `/api/*` from your Pi-hole, so the browser never makes a cross-origin request.
+The browser calls same-origin `/api/*` routes; the server forwards them to FTL
+with its own session (this also sidesteps the FTL CORS bug on list endpoints,
+pi-hole/FTL issue #2261).
 
-Why: Pi-hole/FTL has a bug where responses for the list endpoints (`/api/domains/*`, `/api/clients`, `/api/groups`) are missing the `Access-Control-Allow-Origin` header (see pi-hole/FTL issue #2261), which breaks direct cross-origin calls from this app — the filter list comes back empty while the status page still works. The proxy sidesteps the bug entirely and keeps working once FTL fixes it upstream.
-
--   `PIHOLE_PROXY_TARGET` must be the address of the Pi-hole **as seen from the container** (e.g. `172.17.0.1` for a Pi-hole on the Docker host, a LAN IP, or a Docker service name if both run in the same compose network). FTL is expected on port `1010`.
--   `REACT_APP_PIHOLE_ADMIN` is optional: the URL the "open admin" button should use. Without it, the admin UI is opened at the app's own origin (`/admin`), which only works if your reverse setup also serves the Pi-hole admin interface from there.
-
-Alternatively you can keep the direct, cross-origin mode by setting an absolute base URL:
-
-`REACT_APP_PIHOLE_BASE=http://192.168.1.12:1010/api`
-
-— but be aware it is affected by the FTL CORS bug described above until it is fixed upstream.
-
--   Parameters explanation
-
-    -d: Run the container in detached mode (in the background).
-
-    -p 3016:80: Map port 3016 on the host to port 80 inside the container.
-
-    -e REACT_APP_PIHOLE_PASSWORD=<pihole password>: Set the REACT_APP_PIHOLE_PASSWORD environment variable with your Pihole API key.
-
-    -e REACT_APP_PIHOLE_BASE=< e.g /api or http://192.168.1.12:1010/api>: Set the REACT_APP_PIHOLE_BASE environment variable with the specified base URL.
-
-    -e PIHOLE_PROXY_TARGET=< e.g 172.17.0.1>: Address of the Pi-hole as seen from the container, used by the built-in /api reverse proxy.
-
-    -e REACT_APP_PIHOLE_ADMIN=< e.g http://192.168.1.12:1010/admin>: Optional URL for the "open admin" button.
-
-    mikicv/pihole-switcher:latest : Specify the image name and tag.
+-   `PIHOLE_API_PASSWORD` (required): the **plain** FTL API password. FTL v6
+    only accepts the plain password at `/api/auth` — not the hashed form.
+-   `PIHOLE_PROXY_TARGET`: the address of the Pi-hole **as seen from the
+    container** (e.g. `172.17.0.1` for a Pi-hole on the Docker host, a LAN IP,
+    or a Docker service name if both run in the same compose network).
+-   `PIHOLE_FTL_PORT` (default `1010`): FTL API port.
+-   `PUBLIC_PIHOLE_ADMIN` (optional): the URL the "open admin" link in the
+    header points to.
 
 ---
 
-If you preffer docker compose instead
+If you prefer docker compose instead (see `docker-compose.yml`):
 
 ```docker compose
-version: '3'
-
 services:
   pihole-switcher:
     image: mikicv/pihole-switcher:latest
     ports:
-      - "3016:80"
+      - "3016:3000"
     environment:
-      - REACT_APP_PIHOLE_PASSWORD=<pihole password>
-      - REACT_APP_PIHOLE_BASE=/api
+      - PIHOLE_API_PASSWORD=<pihole api password>
       - PIHOLE_PROXY_TARGET=<pihole address as seen from the container, e.g. 172.17.0.1>
-      - REACT_APP_PIHOLE_ADMIN=<optional pi-hole admin URL, e.g. http://192.168.1.12:1010/admin>
+      - PIHOLE_FTL_PORT=1010
+      - PUBLIC_PIHOLE_ADMIN=<optional pi-hole admin URL, e.g. http://192.168.1.12:1010/admin/login>
 ```
 
 **_Make sure you replace pihole password and your pihole base URL with your actual Pihole password and ensure that the pihole-switcher-prod:latest image is available on your system._**
@@ -98,9 +81,21 @@ This app interacts with pihole HTTP API
 
 ## Development:
 
--   For development purposes, .env.local file has to be created with ENV params mentioned above in root.
--   This will require you to have a pihole instance running either bare-metal or in docker.
--   Latest version of: Yarn and Node
+-   Requires Node 22+ and a reachable Pi-hole instance (bare-metal or docker).
+-   `npm install`
+-   `npm run dev` — Vite dev server with SSR on port 5173. Set the same env
+    vars (e.g. in `.env.local`):
+
+    ```
+    PIHOLE_API_PASSWORD=<plain FTL API password>
+    PIHOLE_PROXY_TARGET=192.168.1.12
+    PIHOLE_FTL_PORT=1010
+    PUBLIC_PIHOLE_ADMIN=http://192.168.1.12:1010/admin/login
+    ```
+
+-   `npm test` — Vitest (unit tests against a real mock FTL HTTP server,
+    route handler tests, component tests with Testing Library).
+-   `npm run check` — svelte-check (strict TS).
 
 # Preview
 
@@ -110,7 +105,7 @@ This app interacts with pihole HTTP API
 ## Notice:
 
 -   This is a work in progress. Any suggestions are more than welcome, as well as feature suggestions and PR's.
--   This project is built on Typescript/NodeJS/React, so any contributions should be within this stack.
+-   This project is built on TypeScript/NodeJS/SvelteKit, so any contributions should be within this stack.
 
 ---
 
