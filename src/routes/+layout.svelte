@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '../app.css';
 	import LayoutShell from '../components/LayoutShell.svelte';
 	import { blocking } from '../lib/blockingState.svelte.js';
 
