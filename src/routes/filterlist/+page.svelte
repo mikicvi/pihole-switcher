@@ -7,7 +7,7 @@
 
 	const PER_PAGE = 10;
 
-	let listType = $state<ListType>('deny');
+	let listType = $state<ListType>('allow');
 	let domains = $state<ListDomain[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);

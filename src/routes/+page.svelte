@@ -6,7 +6,20 @@
 	import Pie from '../components/Pie.svelte';
 
 	type ChartTab = 'ads' | 'queries';
-	const PIE_PALETTE = ['#ff6384', '#ff9f40', '#ffcd56', '#4bc0c0', '#36a2ea', '#9966ff'];
+	// 10-hue palette (Open-Color) tuned for the dark theme — must stay in sync
+	// with the default in src/components/Pie.svelte.
+	const PIE_PALETTE = [
+		'#ff6b8a', // coral pink
+		'#ffa94d', // orange
+		'#ffd43b', // amber
+		'#69db7c', // green
+		'#38d9a9', // mint
+		'#3bc9db', // cyan
+		'#4dabf7', // blue
+		'#9775fa', // violet
+		'#da77f2', // orchid
+		'#f783ac' // rose
+	];
 
 	const DURATIONS = [
 		{ value: 300, label: '5m' },

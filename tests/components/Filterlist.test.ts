@@ -21,9 +21,10 @@ const TEN_DENY = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 function mockDefaults() {
+	// The page opens on the whitelist, so 'allow' serves the 12-item fixture.
 	mocks.getExactDomains.mockImplementation((type: string) =>
 		Promise.resolve({
-			domains: type === 'deny' ? TEN_DENY : [{ domain: 'alpha.example.com', date_modified: 1, enabled: true }]
+			domains: type === 'allow' ? TEN_DENY : [{ domain: 'beta.example.com', date_modified: 1, enabled: true }]
 		})
 	);
 	mocks.addExactDomain.mockResolvedValue({ added: true, alreadyExists: false });
@@ -35,10 +36,10 @@ describe('Filterlist page', () => {
 		mockDefaults();
 	});
 
-	it('loads the blacklist (deny) by default', async () => {
+	it('loads the whitelist (allow) by default', async () => {
 		render(Page);
 		await screen.findByText('deny-0.example.com');
-		expect(mocks.getExactDomains).toHaveBeenCalledWith('deny');
+		expect(mocks.getExactDomains).toHaveBeenCalledWith('allow');
 	});
 
 	it('paginates 10 per page', async () => {
@@ -49,14 +50,14 @@ describe('Filterlist page', () => {
 		expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
 	});
 
-	it('switching to the whitelist re-fetches the allow list', async () => {
+	it('switching to the blocklist re-fetches the deny list', async () => {
 		const user = userEvent.setup();
 		render(Page);
 		await screen.findByText('deny-0.example.com');
-		await user.click(screen.getByTestId('segment-allow'));
-		expect(await screen.findByText('alpha.example.com')).toBeInTheDocument();
+		await user.click(screen.getByTestId('segment-deny'));
+		expect(await screen.findByText('beta.example.com')).toBeInTheDocument();
 		await waitFor(() =>
-			expect(mocks.getExactDomains).toHaveBeenCalledWith('allow')
+			expect(mocks.getExactDomains).toHaveBeenCalledWith('deny')
 		);
 	});
 
@@ -79,7 +80,7 @@ describe('Filterlist page', () => {
 		await user.type(screen.getByLabelText('Domain to add'), 'example.com');
 		await user.click(screen.getByRole('button', { name: 'Add' }));
 		await waitFor(() =>
-			expect(mocks.addExactDomain).toHaveBeenCalledWith('deny', 'example.com')
+			expect(mocks.addExactDomain).toHaveBeenCalledWith('allow', 'example.com')
 		);
 		expect(await screen.findByText('Added example.com')).toBeInTheDocument();
 	});
