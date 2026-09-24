@@ -150,7 +150,7 @@
 					d={w.d}
 					fill={w.color}
 					stroke={sliceBorder(w.color)}
-					stroke-width="0.3"
+					stroke-width="0.1"
 					stroke-linejoin="round"
 					style="fill-opacity: {hover?.i === i ? 1 : 0.78}; transition: fill-opacity 0.18s ease; cursor: pointer;"
 					onmousemove={(e) => onMove(i, e)}
@@ -164,7 +164,7 @@
 				r={R}
 				fill="none"
 				stroke="color-mix(in srgb, var(--text-muted) 50%, transparent)"
-				stroke-width="0.15"
+				stroke-width="0.1"
 				style="opacity: {progress}; transition: opacity 0.3s ease;"
 			></circle>
 		</svg>
