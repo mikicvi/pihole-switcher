@@ -41,7 +41,8 @@ describe('PiholeClient', () => {
 		const res = await c.getStatus();
 
 		expect(res.ok).toBe(true);
-		expect(res.data).toEqual({ blocking: true, timer: 0 });
+		// Real FTL v6 shape: blocking is the string "enabled" | "disabled".
+		expect(res.data).toEqual({ blocking: 'enabled', timer: null });
 		expect(ftl.authCalls).toBe(1);
 		const auth = ftl.requests[0];
 		expect(auth.method).toBe('POST');

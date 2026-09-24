@@ -100,8 +100,9 @@ describe('Home page', () => {
 
 	it('renders top ads and top queries with counts', async () => {
 		render(Page);
-		expect(await screen.findByText('ads.example.com')).toBeInTheDocument();
-		expect(await screen.findByText('news.example.com')).toBeInTheDocument();
+		// Each domain appears twice: donut legend + bar list.
+		expect((await screen.findAllByText('ads.example.com')).length).toBeGreaterThanOrEqual(1);
+		expect((await screen.findAllByText('news.example.com')).length).toBeGreaterThanOrEqual(1);
 		await waitFor(() =>
 			expect(mocks.getTopDomains).toHaveBeenCalledWith(true, 10)
 		);

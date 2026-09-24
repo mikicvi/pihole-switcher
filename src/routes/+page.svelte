@@ -229,7 +229,9 @@
 		</div>
 	{/if}
 
-	<section class="grid gap-4 sm:grid-cols-2">
+	<!-- grid-cols-1 gives minmax(0,1fr) tracks; a bare single-column grid uses
+	     auto tracks that expand to max-content (long domain names blew the page out) -->
+	<section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<TopList title="Top Ads" domains={topAds} loading={topLoading} updatedAgo={fmtAgo(topLoadedAt)} />
 		<TopList title="Top Queries" domains={topQueries} loading={topLoading} updatedAgo={fmtAgo(topLoadedAt)} />
 	</section>

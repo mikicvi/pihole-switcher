@@ -6,7 +6,16 @@
 
 export interface BlockingStatus {
 	blocking: boolean;
-	timer?: number;
+	timer?: number | null;
+}
+
+/**
+ * FTL v6 returns the blocking flag as the string "enabled" | "disabled"
+ * (not a boolean). Normalize both shapes so callers get a real boolean.
+ */
+export function normalizeBlocking(raw: unknown): boolean {
+	if (typeof raw === 'boolean') return raw;
+	return raw === 'enabled' || raw === 'true';
 }
 
 export interface TopDomain {
@@ -58,7 +67,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** GET /api/dns/blocking/status */
 export function getBlockingStatus(): Promise<BlockingStatus> {
-	return request<BlockingStatus>('/dns/blocking/status');
+	return request<{ blocking?: unknown; timer?: number | null }>('/dns/blocking/status').then(
+		(r) => ({ blocking: normalizeBlocking(r.blocking), timer: r.timer ?? null })
+	);
 }
 
 /** POST /api/dns/blocking with { blocking, timer } */

@@ -20,7 +20,7 @@
 	>
 		<div class="mx-auto flex max-w-[720px] items-center gap-3 px-4 py-3">
 			<img src="/pihole.png" alt="Pi-hole logo" class="h-8 w-8 shrink-0" />
-			<span class="text-base font-semibold tracking-tight">pihole-switcher</span>
+			<span class="hidden whitespace-nowrap text-base font-semibold tracking-tight min-[540px]:inline">pihole-switcher</span>
 			<span class="flex-1"></span>
 			<NavTabs />
 			{#if data.adminUrl}

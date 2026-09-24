@@ -24,6 +24,10 @@ export class MockFtl {
 	authCalls = 0;
 	/** When false, POST /api/auth returns 401. */
 	authOk = true;
+	/** Stateful blocking state — mirrors real FTL v6, which reports the flag
+	 *  as the string "enabled" | "disabled" (never a boolean). */
+	blockingEnabled = true;
+	blockingTimer: number | null = null;
 	/** Paths (with query) that should 401 exactly once, to simulate a dead session. */
 	rejectOnce: string[] = [];
 	session: MockFtlSession = { sid: 'sid-1', csrf: 'csrf-1', validity: 1800 };
@@ -94,10 +98,25 @@ export class MockFtl {
 			}
 
 			if (url.startsWith('/api/dns/blocking/status')) {
-				this.send(res, 200, { blocking: true, timer: 0 });
+				// Real FTL v6 shape: { blocking: "enabled" | "disabled", timer: number | null }
+				this.send(res, 200, {
+					blocking: this.blockingEnabled ? 'enabled' : 'disabled',
+					timer: this.blockingEnabled ? null : this.blockingTimer
+				});
 				return;
 			}
 			if (url.startsWith('/api/dns/blocking')) {
+				if (req.method === 'POST') {
+					let parsed: { blocking?: unknown; timer?: unknown } = {};
+					try {
+						parsed = JSON.parse(body || '{}');
+					} catch {
+						// keep defaults
+					}
+					const enabled = parsed.blocking === true || parsed.blocking === 'enabled';
+					this.blockingEnabled = enabled;
+					this.blockingTimer = enabled ? null : Number(parsed.timer ?? 0) || null;
+				}
 				this.send(res, 200, { success: true });
 				return;
 			}
