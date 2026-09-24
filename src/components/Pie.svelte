@@ -164,7 +164,7 @@
 				r={R}
 				fill="none"
 				stroke="color-mix(in srgb, var(--text-muted) 50%, transparent)"
-				stroke-width="0.3"
+				stroke-width="0.15"
 				style="opacity: {progress}; transition: opacity 0.3s ease;"
 			></circle>
 		</svg>
