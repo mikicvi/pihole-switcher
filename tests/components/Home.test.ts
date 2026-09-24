@@ -98,11 +98,13 @@ describe('Home page', () => {
 		);
 	});
 
-	it('renders top ads and top queries with counts', async () => {
+	it('renders top ads and top queries in the chart tabs', async () => {
 		render(Page);
-		// Each domain appears twice: donut legend + bar list.
-		expect((await screen.findAllByText('ads.example.com')).length).toBeGreaterThanOrEqual(1);
-		expect((await screen.findAllByText('news.example.com')).length).toBeGreaterThanOrEqual(1);
+		// Default tab shows the ads legend.
+		expect(await screen.findByText('ads.example.com')).toBeInTheDocument();
+		// Switch to Top Queries and the queries legend appears.
+		await userEvent.click(await screen.findByRole('tab', { name: 'Top Queries' }));
+		expect(await screen.findByText('news.example.com')).toBeInTheDocument();
 		await waitFor(() =>
 			expect(mocks.getTopDomains).toHaveBeenCalledWith(true, 10)
 		);

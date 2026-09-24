@@ -3,7 +3,10 @@
 	import { setBlockingState as publishBlocking } from '../lib/blockingState.svelte.js';
 	import Switch from '../components/Switch.svelte';
 	import SegmentedControl from '../components/SegmentedControl.svelte';
-	import TopList from '../components/TopList.svelte';
+	import Pie from '../components/Pie.svelte';
+
+	type ChartTab = 'ads' | 'queries';
+	const PIE_PALETTE = ['#ff6384', '#ff9f40', '#ffcd56', '#4bc0c0', '#36a2ea', '#9966ff'];
 
 	const DURATIONS = [
 		{ value: 300, label: '5m' },
@@ -20,6 +23,8 @@
 
 	let topAds = $state<TopDomain[]>([]);
 	let topQueries = $state<TopDomain[]>([]);
+	let chartTab = $state<ChartTab>('ads');
+	const activeDomains = $derived(chartTab === 'ads' ? topAds : topQueries);
 	let topLoading = $state(true);
 	let topLoadedAt = $state<number | null>(null);
 	let error = $state<string | null>(null);
@@ -229,10 +234,77 @@
 		</div>
 	{/if}
 
-	<!-- grid-cols-1 gives minmax(0,1fr) tracks; a bare single-column grid uses
-	     auto tracks that expand to max-content (long domain names blew the page out) -->
-	<section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-		<TopList title="Top Ads" domains={topAds} loading={topLoading} updatedAgo={fmtAgo(topLoadedAt)} />
-		<TopList title="Top Queries" domains={topQueries} loading={topLoading} updatedAgo={fmtAgo(topLoadedAt)} />
+	<!-- Chart section: calm, single dominant pie (like the classic UI). -->
+	<section data-testid="chart-section" class="pt-2">
+		<div class="mb-5 flex items-center justify-center gap-2" role="tablist" aria-label="Chart">
+			{#each (['ads', 'queries'] as const) as t (t)}
+				<button
+					type="button"
+					role="tab"
+					aria-selected={chartTab === t}
+					onclick={() => (chartTab = t)}
+					class="chart-tab"
+					class:chart-tab-active={chartTab === t}
+				>
+					{t === 'ads' ? 'Top Ads' : 'Top Queries'}
+				</button>
+			{/each}
+		</div>
+
+		{#if topLoading}
+			<div class="flex justify-center" aria-hidden="true">
+				<div class="skeleton h-40 w-40 rounded-full"></div>
+			</div>
+		{:else if activeDomains.length === 0}
+			<p class="py-10 text-center text-sm" style="color: var(--text-muted);">Nothing here yet.</p>
+		{:else}
+			<ul
+				class="mx-auto mb-6 flex max-w-[560px] flex-wrap items-center justify-center gap-2"
+				aria-label="Legend"
+			>
+				{#each activeDomains as d, i (d.domain)}
+					<li
+						class="inline-flex max-w-full items-center gap-1.5 rounded border px-2 py-0.5 text-xs"
+						style="border-color: color-mix(in srgb, {PIE_PALETTE[i % PIE_PALETTE.length]} 55%, transparent); color: var(--text-muted);"
+					>
+						<span
+							class="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+							style="background: color-mix(in srgb, {PIE_PALETTE[i % PIE_PALETTE.length]} 30%, transparent); border: 1px solid {PIE_PALETTE[i % PIE_PALETTE.length]};"
+					></span>
+					<span class="max-w-[220px] truncate" title={d.domain}>{d.domain}</span>
+				</li>
+			{/each}
+			</ul>
+
+			<div class="flex justify-center">
+				{#key chartTab}
+					<Pie domains={activeDomains} palette={PIE_PALETTE} size={420} />
+				{/key}
+			</div>
+
+			{#if topLoadedAt}
+				<p class="mt-4 text-center text-xs" style="color: var(--text-muted);">
+					updated {fmtAgo(topLoadedAt)}
+				</p>
+			{/if}
+		{/if}
 	</section>
 </div>
+
+<style>
+	.chart-tab {
+		padding: 0.4rem 0.9rem;
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		border-bottom: 2px solid transparent;
+		transition: color 0.15s ease, border-color 0.15s ease;
+	}
+	.chart-tab:hover {
+		color: var(--text);
+	}
+	.chart-tab-active {
+		color: var(--text);
+		font-weight: 600;
+		border-bottom-color: var(--good);
+	}
+</style>
