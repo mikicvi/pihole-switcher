@@ -15,7 +15,9 @@ permissions:
     actions: write
 
 concurrency:
-    group: docker-publish-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+    group: >-
+        docker-publish-${{ github.event_name }}-
+        ${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: false
 
 jobs:
@@ -26,8 +28,10 @@ jobs:
         # reservation and fail with "failed to reserve cache"). Manual dispatch
         # keeps the original owner-only authorization.
         if: >-
-            (github.event_name == 'workflow_dispatch' && github.actor == 'mikicvi') ||
-            (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+            (github.event_name == 'workflow_dispatch' &&
+                github.actor == 'mikicvi') ||
+            (github.event_name == 'push' &&
+                github.ref == 'refs/heads/master') ||
             (github.event_name == 'pull_request' &&
                 github.event.pull_request.merged == true &&
                 github.base_ref != 'master')
@@ -50,16 +54,19 @@ jobs:
                   username: ${{ secrets.DOCKER_USERNAME }}
                   password: ${{ secrets.DOCKER_PASSWORD }}
 
+            # The image builds itself (Dockerfile runs npm ci + vite build);
+            # this step validates that the app builds before spending a
+            # multi-platform docker build.
             - name: Install dependencies and build
               uses: actions/setup-node@v4
               with:
                   node-version: 22
-                  cache: 'yarn'
+                  cache: npm
 
             - name: Build
               run: |
-                  yarn install
-                  yarn build
+                  npm ci
+                  npm run build
 
             - name: Extract metadata
               id: meta

@@ -1,10 +1,19 @@
 name: Build
+
 on:
     push:
         branches:
             - master
     pull_request:
         types: [opened, synchronize, reopened]
+
+# The same GHA cache key is shared by concurrent runs of this workflow;
+# without a group, parallel runs race on cache reservation and fail with
+# "failed to reserve cache" (same fix as docker-publish, PR #100).
+concurrency:
+    group: build-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
     pipeline:
         name: Pipeline
@@ -17,15 +26,20 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: 22
-                  cache: 'yarn'
+                  cache: npm
             - name: Install dependencies
-              run: yarn install
+              run: npm ci
+            - name: Type check
+              run: npm run check
             - name: Test and coverage
-              run: yarn citest
+              run: npm test
+            - name: Build
+              run: npm run build
             - name: SonarCloud Scan
+              if: github.event_name == 'push'
               uses: SonarSource/sonarqube-scan-action@master
               env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
               with:
-                args: -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+                  args: -Dsonar.token=${{ secrets.SONAR_TOKEN }}

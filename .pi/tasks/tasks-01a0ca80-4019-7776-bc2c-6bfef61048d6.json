@@ -1,0 +1,93 @@
+{
+  "nextId": 9,
+  "tasks": [
+    {
+      "id": "1",
+      "subject": "Thin pie borders (slices + ring) to ~1px",
+      "description": "Slice stroke 0.3→0.1, ring 0.15→0.1 (42 viewBox units, ~1px at 420px). Verify via CDP screenshot.",
+      "status": "pending",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974615,
+      "updatedAt": 1790287974615
+    },
+    {
+      "id": "2",
+      "subject": "Add /health endpoint + Dockerfile HEALTHCHECK",
+      "description": "src/routes/health/+server.ts returning {ok:true}, unit test, HEALTHCHECK in Dockerfile using busybox wget, compose inherits it.",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974617,
+      "updatedAt": 1790288106825
+    },
+    {
+      "id": "3",
+      "subject": "Harden Dockerfile/.dockerignore + security headers",
+      "description": ".dockerignore: exclude .git, tests, coverage, .env*, docs, CI files from build context. svelte.config.js: adapter-node securityHeaders (nosniff, X-Frame-Options DENY, Referrer-Policy).",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974618,
+      "updatedAt": 1790288106827
+    },
+    {
+      "id": "4",
+      "subject": "Fix CI: build.yaml (npm) + docker-publish.yaml (npm)",
+      "description": "build.yaml still uses yarn/citest — rewrite to npm ci, svelte-check, vitest, build; add concurrency group (cache-reservation race fix from PR#100 applies here too). docker-publish.yaml build step: yarn→npm.",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974618,
+      "updatedAt": 1790288304867
+    },
+    {
+      "id": "5",
+      "subject": "Tidy: remove docker-release.sh, update sonar config, package.json 1.0.0, remove PLAN-sveltekit.md",
+      "description": "docker-release.sh is superseded by the workflow (delete). sonar-project.properties references CRA-era paths (src/tests, setupTests.js) — update to tests/ layout. Bump version. Delete planning doc.",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974619,
+      "updatedAt": 1790288491250
+    },
+    {
+      "id": "6",
+      "subject": "Hardened docker-compose.yml",
+      "description": "Variable port + image tag, logging limits, no-new-privileges, comments; keep pull_policy and restart.",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974620,
+      "updatedAt": 1790288491251
+    },
+    {
+      "id": "7",
+      "subject": "Rewrite README for new stack",
+      "description": "Features, security model, env var table, Docker/Portainer deploy, FTL v6 password note, dev workflow, architecture, API allowlist, testing, release/pinning, troubleshooting.",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974620,
+      "updatedAt": 1790288491252
+    },
+    {
+      "id": "8",
+      "subject": "Full verification: tests, check, build, docker run, screenshots, push",
+      "description": "vitest + svelte-check + build + docker build/run, verify /health, security headers, client bundle password-free, image contents, desktop+mobile screenshots. Commit everything and push.",
+      "status": "in_progress",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790287974621,
+      "updatedAt": 1790288491252
+    }
+  ]
+}

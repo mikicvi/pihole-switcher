@@ -1,112 +1,148 @@
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=coverage)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=bugs)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher) [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher)
+# pihole-switcher
 
-# Pihole switcher
+Switch Pi-hole DNS blocking on and off from a small, fast web UI — with the
+FTL API password living **only server-side**.
 
-This project was built to serve as frontend for local Pihole instance.
+Built as a single SvelteKit (Svelte 5 + Node 22) container. No nginx, no env
+shim, no separate backend: one process serves the UI *and* proxies a tiny,
+allowlisted slice of the Pi-hole FTL API.
 
-It's goal was to simplify interaction with pihole, and enable user to switch off/on pihole ad blocking service on the network for "X" amount of time, and display top ads and top requests.
-
-Primary design of the app was mobile oriented, but it looks pretty decent on desktop too.
+![screenshot](docs/screenshot.png)
 
 ## Features
 
--   Enable or disable ad blocking service
--   Display current status of the service
--   Easy access to pihole control dashboard
--   Interactive Pie chart displaying top ads or top queries
--   Light/Dark mode
--   Add whitelist, blacklist domains
+- **One-tap block/unblock** with auto-resume: pause blocking for 5m / 15m / 1h
+  / 24h and the app shows a live countdown, then restores blocking by itself.
+- **Top Ads / Top Queries charts** — a big animated pie (top 10 domains,
+  classic chart.js-style sweep animation, hover tooltips, 10-colour palette).
+- **Filter list manager** — view, search, add and remove whitelist (allow) and
+  blacklist (deny) entries with pagination.
+- **Dark/light themes**, mobile-first layout, works on a phone in the living
+  room.
+- **Server-side FTL proxy** — the browser only ever talks to *this* app. The
+  FTL API password and session tokens never reach the client bundle.
 
-## Setting up
+## Security model
 
-The app is a single SvelteKit (Node) service: it serves the UI **and** proxies
-the Pi-hole FTL API. The API password lives only in the server process — it is
-never shipped to the browser.
+| What | Where it lives |
+| --- | --- |
+| FTL API password | Container environment (`PIHOLE_API_PASSWORD`), server process only |
+| FTL session (`X-FTL-SID`, `X-FTL-CSRF`) | Server process memory, lazily acquired, single-flight, auto-retried on 401 |
+| Browser → app | Same-origin HTTP, no credentials, no secrets |
+| App → FTL | Plain HTTP to the FTL host (LAN-only app; see notes below) |
 
--   To build a docker image execute from root of project:
+The proxy only forwards the five FTL endpoints the UI uses
+(`statusRaw`, `top_domains`, `top_queries`, `domains`, `groups`) — anything
+else gets a 404. Responses: `503 auth_failed` (bad/missing password),
+`502 unreachable` (FTL host not reachable), `404 unknown path`.
 
-`npm install && npm run build`
+Deployed responses carry `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY` and `Referrer-Policy: strict-origin-when-cross-origin`.
 
-`docker build -t pihole-switcher-prod .`
+> **Network note:** pihole-switcher is intended for **local/LAN use**. It
+> talks to FTL over plain HTTP (the default FTL setup). Don't expose it to the
+> internet; put it behind your VPN or keep it on the LAN.
 
-On linux, image can be exported like:
+## Deployment
 
-`docker save pihole-switcher-prod:latest | gzip > pihole-switcher-prod.tar.gz`
+### Docker (any homelab)
 
-```
-docker run -d -p 3016:3000 \
-  -e PIHOLE_API_PASSWORD=<pihole api password> \
-  -e PIHOLE_PROXY_TARGET=172.17.0.1 \
-  -e PUBLIC_PIHOLE_ADMIN=http://192.168.1.12:1010/admin/login \
-  pihole-switcher-prod:latest
-```
+The image is `mikicv/pihole-switcher` on Docker Hub (multi-arch: amd64,
+arm64, arm/v7), published automatically on merges to `master`:
 
-The browser calls same-origin `/api/*` routes; the server forwards them to FTL
-with its own session (this also sidesteps the FTL CORS bug on list endpoints,
-pi-hole/FTL issue #2261).
+- `latest` — newest release
+- `master-<sha>` — exact release per merge (pin this for reproducibility)
 
--   `PIHOLE_API_PASSWORD` (required): the **plain** FTL API password. FTL v6
-    only accepts the plain password at `/api/auth` — not the hashed form.
--   `PIHOLE_PROXY_TARGET`: the address of the Pi-hole **as seen from the
-    container** (e.g. `172.17.0.1` for a Pi-hole on the Docker host, a LAN IP,
-    or a Docker service name if both run in the same compose network).
--   `PIHOLE_FTL_PORT` (default `1010`): FTL API port.
--   `PUBLIC_PIHOLE_ADMIN` (optional): the URL the "open admin" link in the
-    header points to.
+<details>
+<summary>docker compose</summary>
 
----
-
-If you prefer docker compose instead (see `docker-compose.yml`):
-
-```docker compose
+```yaml
 services:
-  pihole-switcher:
-    image: mikicv/pihole-switcher:latest
-    ports:
-      - "3016:3000"
-    environment:
-      - PIHOLE_API_PASSWORD=<pihole api password>
-      - PIHOLE_PROXY_TARGET=<pihole address as seen from the container, e.g. 172.17.0.1>
-      - PIHOLE_FTL_PORT=1010
-      - PUBLIC_PIHOLE_ADMIN=<optional pi-hole admin URL, e.g. http://192.168.1.12:1010/admin/login>
+    pihole-switcher:
+        image: mikicv/pihole-switcher:latest
+        ports:
+            - "3016:3000"
+        environment:
+            PIHOLE_API_PASSWORD: your-ftl-api-password
+            # only if Pi-hole is NOT on the container host:
+            # PIHOLE_PROXY_TARGET: 192.168.1.50
+        restart: unless-stopped
 ```
 
-**_Make sure you replace pihole password and your pihole base URL with your actual Pihole password and ensure that the pihole-switcher-prod:latest image is available on your system._**
+</details>
 
-# High level overview
+<details>
+<summary>Portainer custom template</summary>
 
-This app interacts with pihole HTTP API
+Create a custom template pointing at `mikicv/pihole-switcher`, container port
+`3000`, published port `3016` (or your choice), environment variables:
 
--   View API endpoints at pihole API documentation: e.g http://192.168.1.1:8080/api/docs
+| Variable | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `PIHOLE_API_PASSWORD` | **yes** | — | Plain FTL v6 API password (Settings → Web server → API password). |
+| `PIHOLE_PROXY_TARGET` | no | `172.17.0.1` | FTL host *as seen from the container*. `172.17.0.1` is the docker bridge gateway — correct when pihole-switcher runs on the same machine as Pi-hole. Otherwise use the host's LAN IP. |
+| `PIHOLE_FTL_PORT` | no | `1010` | FTL API port (FTL v6 serves the REST API on **1010**, not 8080). |
+| `PUBLIC_PIHOLE_ADMIN` | no | — | Public admin URL shown as a link in the app header. |
+| `PORT` | no | `3000` | Container listen port. |
 
-## Development:
+</details>
 
--   Requires Node 22+ and a reachable Pi-hole instance (bare-metal or docker).
--   `npm install`
--   `npm run dev` — Vite dev server with SSR on port 5173. Set the same env
-    vars (e.g. in `.env.local`):
+After starting, open `http://<host>:3016`. The container ships a
+`HEALTHCHECK` on `/health` so Docker/Portainer shows it as *healthy* once the
+app is serving.
 
-    ```
-    PIHOLE_API_PASSWORD=<plain FTL API password>
-    PIHOLE_PROXY_TARGET=192.168.1.12
-    PIHOLE_FTL_PORT=1010
-    PUBLIC_PIHOLE_ADMIN=http://192.168.1.12:1010/admin/login
-    ```
+### FTL v6 password — gotcha
 
--   `npm test` — Vitest (unit tests against a real mock FTL HTTP server,
-    route handler tests, component tests with Testing Library).
--   `npm run check` — svelte-check (strict TS).
+FTL v6 has **two** passwords: the plain *API password* (what this app needs)
+and the 64-character *app password* (a SHA-256 of the plain one). Only the
+**plain** password is accepted by `/api/auth`. If you only have the app
+password, reset the API password in FTL → Settings → Web server.
 
-# Preview
+## Development
 
-<img width="543" alt="switcher-preview-1" src="https://github.com/mikicvi/pihole-switcher/assets/88291034/92129741-993b-45a3-a902-614ddfbc9414">
-<img width="543" alt="switcher-preview-2" src="https://github.com/mikicvi/pihole-switcher/assets/88291034/bf67b1b4-b7e7-480c-be2f-3ff7cabed6ef">
+```bash
+npm ci
+cp .env.example .env   # fill in PIHOLE_API_PASSWORD (and *_PROXY_TARGET if needed)
+npm run dev            # http://localhost:5173
+```
 
-## Notice:
+`.env` values are read by SvelteKit on the server; `PUBLIC_*`-prefixed values
+would also be exposed to the browser (we don't use any).
 
--   This is a work in progress. Any suggestions are more than welcome, as well as feature suggestions and PR's.
--   This project is built on TypeScript/NodeJS/SvelteKit, so any contributions should be within this stack.
+```bash
+npm test               # vitest run --coverage
+npm run check          # svelte-kit sync && svelte-check
+npm run build          # vite build → build/ (node build runs it)
+```
 
----
+### Architecture
 
-Contact: <mika5566@gmail.com>
+```
+Browser ──same origin──▶ SvelteKit (adapter-node, :3000)
+                              │
+                              ├─ /            UI (Svelte 5, Tailwind 4)
+                              ├─ /health      liveness probe
+                              └─ /api/{statusRaw|top_domains|top_queries|domains|groups}
+                                       │  allowlisted proxy
+                                       ▼
+                              FTL (:1010)  password + session kept server-side
+```
+
+- `src/lib/piholeClient.ts` — server FTL client: lazy login, sid/csrf headers,
+  single-flight logins, 401 retry, cooldown after auth failure.
+- `src/routes/api/[...path]/+server.ts` — the allowlisted proxy.
+- `src/lib/api.ts` — browser client (fetch, no secrets).
+- `tests/` — component + route tests; `mockFtl.ts` is a stateful in-process
+  FTL v6 fake (real `node:http` server) used by the route tests.
+
+### Releases
+
+- `.github/workflows/build.yaml` — CI: `npm ci`, svelte-check, vitest, build,
+  SonarCloud scan.
+- `.github/workflows/docker-publish.yaml` — on merges to `master`: builds and
+  pushes multi-arch images (`latest`, `master-<sha>`, ref/PR tags). Runs are
+  concurrency-gated so exactly one publishes per merge.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
