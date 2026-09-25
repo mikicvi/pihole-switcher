@@ -18,8 +18,11 @@ const mocks = vi.hoisted(() => {
 		destroyed: boolean;
 		update(): void;
 		destroy(): void;
-		hide(i: number): void;
-		show(i: number): void;
+		/** chart.js signature: hide(datasetIndex, dataIndex?) — records the arc (data) index. */
+		hide(datasetIndex: number, i?: number): void;
+		show(datasetIndex: number, i?: number): void;
+		hideCalls: [number, number?][];
+		showCalls: [number, number?][];
 	}
 	const instances: MockChart[] = [];
 	class Chart {
@@ -29,6 +32,8 @@ const mocks = vi.hoisted(() => {
 		hiddenIndexes: number[] = [];
 		updates = 0;
 		destroyed = false;
+		hideCalls: [number, number?][] = [];
+		showCalls: [number, number?][] = [];
 		constructor(canvas: HTMLCanvasElement, config: MockChart['config']) {
 			this.canvas = canvas;
 			this.config = config;
@@ -40,11 +45,13 @@ const mocks = vi.hoisted(() => {
 		destroy(): void {
 			this.destroyed = true;
 		}
-		hide(i: number): void {
-			if (!this.hiddenIndexes.includes(i)) this.hiddenIndexes.push(i);
+		hide(datasetIndex: number, i?: number): void {
+			this.hideCalls.push([datasetIndex, i]);
+			if (i !== undefined && !this.hiddenIndexes.includes(i)) this.hiddenIndexes.push(i);
 		}
-		show(i: number): void {
-			this.hiddenIndexes = this.hiddenIndexes.filter((x) => x !== i);
+		show(datasetIndex: number, i?: number): void {
+			this.showCalls.push([datasetIndex, i]);
+			if (i !== undefined) this.hiddenIndexes = this.hiddenIndexes.filter((x) => x !== i);
 		}
 	}
 	return { Chart, instances };
@@ -101,12 +108,16 @@ describe('Pie (chart.js)', () => {
 
 		await fireEvent.click(chips[1]); // b.net
 		expect(mocks.instances[0].hiddenIndexes).toContain(1);
+		// chart.js API is hide(datasetIndex, dataIndex) — single-dataset pie: dataset 0, arc 1.
+		// (A one-arg call would treat the arc index as a dataset index and hide the whole pie.)
+		expect(mocks.instances[0].hideCalls).toContainEqual([0, 1]);
 		expect(chips[1].classList.contains('pie-legend-chip-off')).toBe(true);
 		expect(chips[1].getAttribute('aria-pressed')).toBe('true');
 
 		// Clicking again re-shows the slice.
 		await fireEvent.click(chips[1]);
 		expect(mocks.instances[0].hiddenIndexes).not.toContain(1);
+		expect(mocks.instances[0].showCalls).toContainEqual([0, 1]);
 		expect(chips[1].classList.contains('pie-legend-chip-off')).toBe(false);
 	});
 

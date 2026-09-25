@@ -95,9 +95,10 @@
 		chart.data.labels = labels;
 		chart.data.datasets[0].data = data;
 		// Reconcile hidden state by name (indices may have shifted).
+		// Single-dataset pie: hide/show take (datasetIndex, dataIndex).
 		labels.forEach((label, i) => {
-			if (hidden.includes(label)) chart!.hide(i);
-			else chart!.show(i);
+			if (hidden.includes(label)) chart!.hide(0, i);
+			else chart!.show(0, i);
 		});
 		chart.update();
 	});
@@ -187,10 +188,10 @@
 		if (!chart) return;
 		if (hidden.includes(domainName)) {
 			hidden = hidden.filter((d) => d !== domainName);
-			chart.show(index);
+			chart.show(0, index);
 		} else {
 			hidden = [...hidden, domainName];
-			chart.hide(index);
+			chart.hide(0, index);
 		}
 	}
 </script>
