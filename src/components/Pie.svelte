@@ -1,228 +1,293 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { Chart, ArcElement, PieController, Tooltip } from 'chart.js';
 	import type { TopDomain } from '../lib/api.js';
 
+	Chart.register(ArcElement, PieController, Tooltip);
+
 	/**
-	 * Big solid SVG pie (wedge paths) with a Fluent/Chart.js-style entrance:
-	 * the whole pie starts as a line at 12 o'clock and sweeps open clockwise
-	 * as one continuous reveal. Slices are semi-transparent with a thin
-	 * lighter border between them plus a thin outer ring. Hovering a slice
-	 * brightens it and shows a fading tooltip with name + value. Re-key the
-	 * component (Svelte {#key}) to replay the animation.
+	 * The classic pie, back to its roots: chart.js on a canvas.
+	 *
+	 * - Entrance: chart.js's default rotate sweep (the "gorgeous" animation).
+	 * - Tooltip: chart.js built-in — follows the cursor on desktop, shows on
+	 *   tap on mobile, and never overflows the page.
+	 * - Legend: real DOM chips above the chart. Clicking one hides/shows the
+	 *   slice with chart.js's animated re-layout and strikes the chip through,
+	 *   exactly like the original app.
+	 *
+	 * Colors are theme-aware: the Catppuccin palette is read from CSS
+	 * variables and refreshed when the `dark` class flips on <html>.
+	 * Re-key the component (Svelte {#key}) to replay the entrance.
 	 */
 	interface Props {
 		domains: TopDomain[];
-		/** Colors for the top 10 slices; recycled beyond that. */
-		palette?: string[];
-		/** Maximum pixel diameter (default 420); shrinks to fit on small screens. */
+		/** Maximum pixel size (default 420); shrinks to fit via --pie-max. */
 		size?: number;
-		/** Full reveal duration in ms (default 900). */
+		/** Entrance animation duration in ms (default 900). */
 		duration?: number;
 	}
 
-	let {
-		domains,
-		// Theme-aware: defined in app.css (Catppuccin Latte / Mocha accents).
-		palette = Array.from({ length: 10 }, (_, i) => `var(--pie-${i + 1})`),
-		size = 420,
-		duration = 900
-	}: Props = $props();
+	let { domains, size = 420, duration = 900 }: Props = $props();
 
-	const CX = 21;
-	const CY = 21;
-	const R = 20; // wedge radius in the 42×42 viewBox (padding keeps borders unclipped)
+	let canvas: HTMLCanvasElement | undefined;
+	let chart: Chart<'pie'> | null = null;
+	/** Domain names hidden via the legend, in index order of `domains`. */
+	let hidden = $state<string[]>([]);
 
-	interface Slice {
-		color: string;
-		start: number; // degrees from 12 o'clock, clockwise
-		end: number;
-		pct: number;
-	}
+	const isHex = (s: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s);
 
-	const slices = $derived.by<Slice[]>(() => {
-		const total = domains.reduce((s, d) => s + d.count, 0);
-		if (total === 0) return [];
-		const out: Slice[] = [];
-		let start = 0;
-		for (let i = 0; i < domains.length; i++) {
-			const pct = (domains[i].count / total) * 100;
-			out.push({
-				color: palette[i % palette.length],
-				start,
-				end: start + (pct / 100) * 360,
-				pct
-			});
-			start = out[out.length - 1].end;
-		}
-		return out;
-	});
-
-	// ---- entrance: clockwise reveal, driven per-frame (no masks/dash arrays) ----
-	let progress = $state(0);
-	$effect(() => {
-		let raf = 0;
-		const t0 = performance.now();
-		const tick = (t: number) => {
-			const p = Math.min(1, (t - t0) / duration);
-			progress = 1 - Math.pow(1 - p, 3); // easeOutCubic
-			if (p < 1) raf = requestAnimationFrame(tick);
-		};
-		raf = requestAnimationFrame(tick);
-		return () => cancelAnimationFrame(raf);
-	});
-
-	// Slice borders: a brighter tint of the slice colour (like the old
-	// Fluent chart), not a black gap.
-	const sliceBorder = (c: string) => `color-mix(in srgb, ${c} 50%, white)`;
-
-	const num = (v: number) => Number(v.toFixed(3));
-
-	function pt(angle: number, r: number): [number, number] {
-		const rad = ((angle - 90) * Math.PI) / 180;
-		return [num(CX + r * Math.cos(rad)), num(CY + r * Math.sin(rad))];
-	}
-
-	function wedgePath(a0: number, a1: number, r = R): string {
-		const sweep = a1 - a0;
-		if (sweep >= 359.99) {
-			const [x1, y1] = pt(0, r);
-			const [x2, y2] = pt(180, r);
-			return `M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2} A ${r} ${r} 0 1 1 ${x1} ${y1} Z`;
-		}
-		const [x1, y1] = pt(a0, r);
-		const [x2, y2] = pt(a1, r);
-		const large = sweep > 180 ? 1 : 0;
-		return `M ${CX} ${CY} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
-	}
-
-	// Wedge geometry at the current reveal progress: the pie grows clockwise as
-	// a whole, exactly like the chart.js "start from a line" animation.
-	const wedges = $derived.by(() => {
-		const reveal = progress * 360;
-		return slices.map((s) => {
-			const end = Math.min(s.end, reveal);
-			return { ...s, d: end - s.start > 0.05 ? wedgePath(s.start, end) : '' };
+	/** Mix a hex colour toward white (or black) by amt. Non-hex passes through. */
+	function mixToward(hex: string, target: number, amt: number): string {
+		if (!isHex(hex)) return hex;
+		let h = hex.slice(1);
+		if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+		const out = [0, 2, 4].map((i) => {
+			const c = parseInt(h.slice(i, i + 2), 16);
+			return Math.round(c + (target - c) * amt)
+				.toString(16)
+				.padStart(2, '0');
 		});
+		return `#${out.join('')}`;
+	}
+
+	/** Catppuccin palette + neutrals resolved to concrete values (canvas can't use var()). */
+	function themeVars() {
+		const cs = getComputedStyle(document.documentElement);
+		const v = (name: string, fallback: string) => {
+			const val = cs.getPropertyValue(name).trim();
+			return val || fallback;
+		};
+		return {
+			palette: Array.from({ length: 10 }, (_, i) =>
+				v(`--pie-${i + 1}`, '#8b93a7')
+			),
+			text: v('--text', '#ececf4'),
+			muted: v('--text-muted', '#9aa0b4'),
+			border: v('--border', '#3a3f55'),
+			surface2: v('--surface-2', '#1e1e2e')
+		};
+	}
+
+	/** Palette colours in current `domains` order (index-stable per position). */
+	const paletteFor = (list: TopDomain[]) =>
+		list.map((_, i) => themeVars().palette[i % 10]);
+
+	/** Chart.js colours for the current data: fill, hover fill, slice border. */
+	function chartColors(list: TopDomain[]) {
+		const c = paletteFor(list);
+		return {
+			background: c,
+			hover: c.map((x) => mixToward(x, 255, 0.12)),
+			border: c.map((x) => mixToward(x, 255, 0.5))
+		};
+	}
+
+	$effect(() => {
+		// Data refresh (60s poll): update the chart in place with animation.
+		if (!chart) return;
+		const labels = domains.map((d) => d.domain);
+		const data = domains.map((d) => d.count);
+		const curLabels = chart.data.labels ?? [];
+		const cur = chart.data.datasets[0].data as number[];
+		if (curLabels.join('\n') === labels.join('\n') && data.every((v, i) => cur[i] === v)) {
+			return;
+		}
+		chart.data.labels = labels;
+		chart.data.datasets[0].data = data;
+		// Reconcile hidden state by name (indices may have shifted).
+		labels.forEach((label, i) => {
+			if (hidden.includes(label)) chart!.hide(i);
+			else chart!.show(i);
+		});
+		chart.update();
 	});
 
-	// ---- hover tooltip ----
-	let wrapEl: HTMLDivElement | undefined = $state();
-	interface Hover {
-		i: number;
-		x: number;
-		y: number;
-	}
-	let hover = $state<Hover | null>(null);
+	onMount(() => {
+		if (!canvas) return; // empty domain list: nothing to draw
+		const t = themeVars();
+		const cc = chartColors(domains);
+		chart = new Chart(canvas, {
+			type: 'pie',
+			data: {
+				labels: domains.map((d) => d.domain),
+				datasets: [
+					{
+						data: domains.map((d) => d.count),
+						backgroundColor: cc.background,
+						hoverBackgroundColor: cc.hover,
+						borderColor: cc.border,
+						borderWidth: 1,
+						hoverOffset: 6
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				animation: { duration, easing: 'easeOutCubic' },
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						backgroundColor: t.surface2,
+						titleColor: t.text,
+						bodyColor: t.muted,
+						borderColor: t.border,
+						borderWidth: 1,
+						cornerRadius: 8,
+						padding: 8,
+						displayColors: false,
+						callbacks: {
+							label: (ctx) => {
+								const data = ctx.dataset.data as number[];
+								const total = data.reduce((a, b) => a + Number(b), 0);
+								const value = Number(ctx.parsed);
+								const pct = total
+									? Math.round((value / total) * 100)
+									: 0;
+								return ` ${value.toLocaleString()} · ${pct}%`;
+							}
+						}
+					}
+				}
+			}
+		});
 
-	function onMove(i: number, e: MouseEvent) {
-		if (!wrapEl) return;
-		const r = wrapEl.getBoundingClientRect();
-		hover = { i, x: e.clientX - r.left, y: e.clientY - r.top };
-	}
-	function onLeave() {
-		hover = null;
+		// Theme flips (dark class on <html>): re-read CSS vars, restyle in place.
+		const mo = new MutationObserver(() => {
+			if (!chart) return;
+			const t2 = themeVars();
+			const c2 = chartColors(domains);
+			const ds = chart.data.datasets[0];
+			ds.backgroundColor = c2.background;
+			ds.hoverBackgroundColor = c2.hover;
+			ds.borderColor = c2.border;
+			const tip = chart.options.plugins?.tooltip;
+			if (tip) {
+				tip.backgroundColor = t2.surface2;
+				tip.titleColor = t2.text;
+				tip.bodyColor = t2.muted;
+				tip.borderColor = t2.border;
+			}
+			chart.update('none');
+		});
+		mo.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['class']
+		});
+
+		return () => {
+			mo.disconnect();
+			chart?.destroy();
+			chart = null;
+		};
+	});
+
+	/** Legend chip click: hide/show the slice with chart.js's animated re-layout. */
+	function toggle(domainName: string, index: number) {
+		if (!chart) return;
+		if (hidden.includes(domainName)) {
+			hidden = hidden.filter((d) => d !== domainName);
+			chart.show(index);
+		} else {
+			hidden = [...hidden, domainName];
+			chart.hide(index);
+		}
 	}
 </script>
 
-{#if slices.length > 0}
-	<div
-		bind:this={wrapEl}
-		class="pie-appear relative"
-		style="width: min(100%, {size}px); aspect-ratio: 1 / 1; margin: 0 auto;"
-		role="img"
-		aria-label="pie chart of {domains.length} domains"
-	>
-		<svg viewBox="0 0 42 42" width="100%" height="100%" class="block">
-			{#each wedges as w, i (i)}
-				<path
-					data-slice={i}
-					d={w.d}
-					fill={w.color}
-					stroke={sliceBorder(w.color)}
-					stroke-width="0.1"
-					stroke-linejoin="round"
-					style="fill-opacity: {hover?.i === i ? 1 : 0.78}; transition: fill-opacity 0.18s ease; cursor: pointer;"
-					onmousemove={(e) => onMove(i, e)}
-					onmouseleave={onLeave}
-				></path>
-			{/each}
-			<!-- border around the whole pie, like the original app -->
-			<circle
-				cx={CX}
-				cy={CY}
-				r={R}
-				fill="none"
-				stroke="color-mix(in srgb, var(--text-muted) 50%, transparent)"
-				stroke-width="0.1"
-				style="opacity: {progress}; transition: opacity 0.3s ease;"
-			></circle>
-		</svg>
-
-		{#if hover && hover.i < domains.length}
-			<div
-				class="pie-tip"
-				style="left: {hover.x}px; top: {hover.y}px;"
-				role="status"
-			>
-				<span class="pie-tip-name">{domains[hover.i].domain}</span>
-				<span class="pie-tip-value"
-					>{domains[hover.i].count.toLocaleString()} · {Math.round(slices[hover.i].pct)}%</span
+{#if domains.length > 0}
+<div class="pie-root">
+	<ul class="pie-legend" role="list" aria-label="legend — click a domain to hide it from the chart">
+		{#each domains as d, i (d.domain)}
+			{@const off = hidden.includes(d.domain)}
+			<li>
+				<button
+					type="button"
+					class="pie-legend-chip {off ? 'pie-legend-chip-off' : ''}"
+					class:dark={off}
+					aria-pressed={off}
+					title={off ? `Show ${d.domain}` : `Hide ${d.domain} from the chart`}
+					onclick={() => toggle(d.domain, i)}
 				>
-			</div>
-		{/if}
+					<span class="pie-legend-dot" style="background: var(--pie-{(i % 10) + 1})"></span>
+					<span class="pie-legend-text">{d.domain}</span>
+				</button>
+			</li>
+		{/each}
+	</ul>
+
+	<div
+		class="pie-box"
+		style="width: min(100%, var(--pie-max, {size}px)); aspect-ratio: 1 / 1;"
+	>
+		<canvas bind:this={canvas} role="img" aria-label="pie chart of {domains.length} domains"></canvas>
 	</div>
+</div>
 {/if}
 
 <style>
-	.pie-appear {
-		animation: pie-in 0.45s cubic-bezier(0.33, 0, 0.2, 1) both;
-	}
-	@keyframes pie-in {
-		from {
-			opacity: 0;
-			transform: scale(0.94);
-		}
-		to {
-			opacity: 1;
-			transform: scale(1);
-		}
-	}
-	.pie-tip {
-		position: absolute;
-		transform: translate(14px, -50%);
+	.pie-root {
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
-		padding: 6px 10px;
-		border-radius: 8px;
+		gap: 16px;
+	}
+	.pie-legend {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px 10px;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.pie-legend-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 4px 10px;
+		border-radius: 999px;
 		border: 1px solid var(--border);
 		background: var(--surface-2);
-		box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
-		font-size: 12px;
-		line-height: 1.3;
-		pointer-events: none;
-		white-space: nowrap;
-		max-width: 260px;
+		font-size: 12.5px;
+		font-family: inherit;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition:
+			border-color 0.15s ease,
+			color 0.15s ease,
+			opacity 0.15s ease,
+			transform 0.1s ease;
+	}
+	.pie-legend-chip:hover {
+		color: var(--text);
+		border-color: var(--accent);
+	}
+	.pie-legend-chip:active {
+		transform: scale(0.97);
+	}
+	.pie-legend-chip:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 1px;
+	}
+	.pie-legend-chip-off {
+		opacity: 0.45;
+	}
+	.pie-legend-chip-off .pie-legend-text {
+		text-decoration: line-through;
+	}
+	.pie-legend-dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 3px;
+		flex-shrink: 0;
+	}
+	.pie-legend-text {
+		max-width: 220px;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		animation: tip-in 0.18s ease both;
-		z-index: 10;
+		white-space: nowrap;
 	}
-	@keyframes tip-in {
-		from {
-			opacity: 0;
-			transform: translate(10px, -50%);
-		}
-		to {
-			opacity: 1;
-			transform: translate(14px, -50%);
-		}
-	}
-	.pie-tip-name {
-		color: var(--text);
-		font-weight: 600;
-	}
-	.pie-tip-value {
-		color: var(--text-muted);
-		font-variant-numeric: tabular-nums;
+	.pie-box {
+		margin: 0 auto;
 	}
 </style>

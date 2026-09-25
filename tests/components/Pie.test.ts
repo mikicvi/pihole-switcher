@@ -1,70 +1,124 @@
-// @vitest-environment jsdom
-import { fireEvent, render, waitFor } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
+import { render } from '@testing-library/svelte';
+import { fireEvent, waitFor } from '@testing-library/dom';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import Pie from '../../src/components/Pie.svelte';
+import type { TopDomain } from '../../src/lib/api.js';
 
-const DOMAINS = [
+// jsdom has no canvas 2D context — replace chart.js with a recording mock.
+const mocks = vi.hoisted(() => {
+	interface MockChart {
+		canvas: HTMLCanvasElement;
+		config: {
+			type: string;
+			data: { labels: (string | number)[]; datasets: { data: number[] }[] };
+			options: Record<string, unknown>;
+		};
+		hiddenIndexes: number[];
+		updates: number;
+		destroyed: boolean;
+		update(): void;
+		destroy(): void;
+		hide(i: number): void;
+		show(i: number): void;
+	}
+	const instances: MockChart[] = [];
+	class Chart {
+		static register(): void {}
+		canvas: HTMLCanvasElement;
+		config: MockChart['config'];
+		hiddenIndexes: number[] = [];
+		updates = 0;
+		destroyed = false;
+		constructor(canvas: HTMLCanvasElement, config: MockChart['config']) {
+			this.canvas = canvas;
+			this.config = config;
+			instances.push(this);
+		}
+		update(): void {
+			this.updates++;
+		}
+		destroy(): void {
+			this.destroyed = true;
+		}
+		hide(i: number): void {
+			if (!this.hiddenIndexes.includes(i)) this.hiddenIndexes.push(i);
+		}
+		show(i: number): void {
+			this.hiddenIndexes = this.hiddenIndexes.filter((x) => x !== i);
+		}
+	}
+	return { Chart, instances };
+});
+
+vi.mock('chart.js', () => ({
+	Chart: mocks.Chart,
+	ArcElement: {},
+	PieController: {},
+	Tooltip: {}
+}));
+
+const domains: TopDomain[] = [
 	{ domain: 'a.com', count: 50 },
-	{ domain: 'b.com', count: 25 },
-	{ domain: 'c.com', count: 25 }
+	{ domain: 'b.net', count: 30 },
+	{ domain: 'c.org', count: 20 }
 ];
 
-function slicePaths(container: Element): SVGPathElement[] {
-	return Array.from(container.querySelectorAll('path[data-slice]')) as SVGPathElement[];
-}
+describe('Pie (chart.js)', () => {
+	beforeEach(() => {
+		mocks.instances.length = 0;
+	});
 
-describe('Pie', () => {
-	it('renders one wedge path per domain plus an outer border circle', async () => {
-		const { container } = render(Pie, { props: { domains: DOMAINS } });
-		// the reveal animation fills in the wedges over rAF frames
-		await waitFor(
-			() => expect(slicePaths(container).length).toBe(3),
-			{ timeout: 2000 }
-		);
-		await waitFor(() => {
-			const paths = slicePaths(container);
-			for (const p of paths) expect(p.getAttribute('d')).toMatch(/^M/);
-		}, { timeout: 2000 });
-		const borders = slicePaths(container);
-		for (const p of borders) {
-			// borders are a brighter tint of the slice colour, not black
-			expect(p.getAttribute('stroke')).toContain('color-mix');
-			expect(p.getAttribute('stroke')).not.toContain('--bg');
-		}
-		// outer border around the whole pie
+	it('renders a canvas and creates a pie chart with the domain data', async () => {
+		const { container } = render(Pie, { domains });
+		const canvas = container.querySelector('canvas');
+		expect(canvas).not.toBeNull();
+		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		const chart = mocks.instances[0];
+		expect(chart.config.type).toBe('pie');
+		expect(chart.config.data.labels).toEqual(['a.com', 'b.net', 'c.org']);
+		expect(chart.config.data.datasets[0].data).toEqual([50, 30, 20]);
+		// Built-in legend is off (we render our own DOM chips); tooltip on.
+		expect((chart.config.options.plugins as Record<string, unknown>).legend).toEqual({
+			display: false
+		});
 		expect(
-			Array.from(container.querySelectorAll('circle')).some(
-				(c) => (c.getAttribute('stroke') ?? '').includes('color-mix')
-			)
+			(Boolean(
+				(chart.config.options.plugins as Record<string, unknown>).tooltip
+			))
 		).toBe(true);
 	});
 
-	it('recycles the palette beyond ten slices', async () => {
-		const many = DOMAINS.concat(
-			Array.from({ length: 9 }, (_, i) => ({ domain: `d${i}.com`, count: 5 }))
-		);
-		const { container } = render(Pie, { props: { domains: many } });
-		await waitFor(() => expect(slicePaths(container).length).toBe(12));
-		const all = slicePaths(container);
-		expect(all[10].getAttribute('fill')).toBe(all[0].getAttribute('fill'));
+	it('shows a legend chip per domain; clicking hides the slice and strikes the chip', async () => {
+		render(Pie, { domains });
+		const chips = await waitFor(() => {
+			const c = Array.from(
+				document.querySelectorAll<HTMLButtonElement>('.pie-legend-chip')
+			);
+			expect(c.length).toBe(3);
+			return c;
+		});
+		await waitFor(() => expect(mocks.instances.length).toBe(1));
+
+		await fireEvent.click(chips[1]); // b.net
+		expect(mocks.instances[0].hiddenIndexes).toContain(1);
+		expect(chips[1].classList.contains('pie-legend-chip-off')).toBe(true);
+		expect(chips[1].getAttribute('aria-pressed')).toBe('true');
+
+		// Clicking again re-shows the slice.
+		await fireEvent.click(chips[1]);
+		expect(mocks.instances[0].hiddenIndexes).not.toContain(1);
+		expect(chips[1].classList.contains('pie-legend-chip-off')).toBe(false);
 	});
 
-	it('shows a name + value tooltip when hovering a slice', async () => {
-		const { container } = render(Pie, { props: { domains: DOMAINS } });
-		await waitFor(() => expect(slicePaths(container).length).toBe(3));
-		const first = slicePaths(container)[0];
-		fireEvent.mouseMove(first, { clientX: 100, clientY: 100 });
-		await waitFor(() => expect(container.querySelector('.pie-tip')).not.toBeNull());
-		const tip = container.querySelector('.pie-tip')!;
-		expect(tip.textContent).toContain('a.com');
-		expect(tip.textContent).toContain('50');
-		// leaving hides it again
-		fireEvent.mouseLeave(first);
-		await waitFor(() => expect(container.querySelector('.pie-tip')).toBeNull());
+	it('re-creates cleanly and destroys the chart on unmount', async () => {
+		const view = render(Pie, { domains });
+		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		view.unmount();
+		expect(mocks.instances[0].destroyed).toBe(true);
 	});
 
-	it('renders nothing for empty data', () => {
-		const { container } = render(Pie, { props: { domains: [] } });
-		expect(container.querySelector('svg')).toBeNull();
+	it('renders nothing for an empty domain list', () => {
+		const { container } = render(Pie, { domains: [] });
+		expect(container.querySelector('canvas')).toBeNull();
 	});
 });

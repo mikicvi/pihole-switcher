@@ -8,8 +8,6 @@
 	type ChartTab = 'ads' | 'queries';
 	// Theme-aware pie palette (Catppuccin accents) — defined as CSS variables
 	// in app.css, shared with the legend chips below.
-	const pieColor = (i: number) => `var(--pie-${(i % 10) + 1})`;
-
 	const DURATIONS = [
 		{ value: 300, label: '5m' },
 		{ value: 900, label: '15m' },
@@ -263,24 +261,6 @@
 		{:else if activeDomains.length === 0}
 			<p class="py-10 text-center text-sm" style="color: var(--text-muted);">Nothing here yet.</p>
 		{:else}
-			<ul
-				class="mx-auto mb-6 flex max-w-[560px] flex-wrap items-center justify-center gap-2"
-				aria-label="Legend"
-			>
-				{#each activeDomains as d, i (d.domain)}
-					<li
-						class="inline-flex max-w-full items-center gap-1.5 rounded border px-2 py-0.5 text-xs"
-						style="border-color: color-mix(in srgb, {pieColor(i)} 55%, transparent); color: var(--text-muted);"
-					>
-						<span
-							class="h-2.5 w-2.5 shrink-0 rounded-[3px]"
-							style="background: color-mix(in srgb, {pieColor(i)} 30%, transparent); border: 1px solid {pieColor(i)};"
-					></span>
-						<span class="max-w-[220px] truncate" title={d.domain}>{d.domain}</span>
-					</li>
-				{/each}
-			</ul>
-
 			{#key chartTab}
 				<Pie domains={activeDomains} size={420} />
 			{/key}

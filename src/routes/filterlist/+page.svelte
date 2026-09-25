@@ -174,7 +174,12 @@
 				{filter ? 'No domains match your search.' : 'No domains yet — add one above.'}
 			</p>
 		{:else}
-			<table class="w-full text-sm">
+			<table class="w-full table-fixed text-sm">
+				<colgroup>
+					<col />
+					<col style="width: 104px;" />
+					<col style="width: 76px;" />
+				</colgroup>
 				<thead class="sticky top-0" style="background: var(--surface-2);">
 					<tr>
 						<th class="px-3 py-2 text-left font-medium" style="color: var(--text-muted);">Domain</th>
@@ -188,7 +193,7 @@
 							class="border-t transition-colors hover:brightness-110"
 							style="border-color: var(--border); {i % 2 === 1 ? 'background: color-mix(in srgb, var(--surface-2) 40%, transparent);' : ''}"
 						>
-							<td class="px-3 py-2" title={d.domain}>{d.domain}</td>
+							<td class="max-w-0 truncate px-3 py-2" title={d.domain}>{d.domain}</td>
 							<td class="px-3 py-2 tabular-nums" style="color: var(--text-muted);">
 								{new Date(d.date_modified * 1000).toLocaleDateString()}
 							</td>

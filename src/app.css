@@ -35,6 +35,14 @@
 	--pie-8: #8839ef;
 	--pie-9: #ea76cb;
 	--pie-10: #7287fd;
+	/* Pie diameter: smaller on phones, capped on desktop */
+	--pie-max: 300px;
+}
+
+@media (min-width: 768px) {
+	:root {
+		--pie-max: 420px;
+	}
 }
 
 .dark {
@@ -64,6 +72,13 @@
 	--pie-8: #b4befe;
 	--pie-9: #f5c2e7;
 	--pie-10: #cba6f7;
+	--pie-max: 300px;
+}
+
+@media (min-width: 768px) {
+	.dark {
+		--pie-max: 420px;
+	}
 }
 
 html {
