@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import LayoutShell from '../../src/components/LayoutShell.svelte';
 import ThemeToggle from '../../src/components/ThemeToggle.svelte';
@@ -76,14 +76,70 @@ describe('LayoutShell', () => {
 });
 
 describe('ThemeToggle', () => {
+	// Controllable prefers-color-scheme stub (jsdom's own matchMedia does not
+	// model an OS scheme we can switch).
+	let osDark: boolean;
+	let osListeners: Array<(e: { matches: boolean }) => void>;
+
+	function setOsDark(v: boolean) {
+		osDark = v;
+		osListeners.forEach((fn) => fn({ matches: v }));
+	}
+
 	beforeEach(() => {
 		document.documentElement.className = '';
 		localStorage.clear();
+		osDark = true;
+		osListeners = [];
+		vi.stubGlobal(
+			'matchMedia',
+			(query: string) => ({
+				media: query,
+				get matches() {
+					return osDark;
+				},
+				addEventListener: (_t: string, fn: (e: { matches: boolean }) => void) => osListeners.push(fn),
+				removeEventListener: () => {},
+				dispatchEvent: () => true
+			})
+		);
 	});
 
-	it('starts dark by default (no saved preference)', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('follows the OS preference on first visit (no saved choice)', () => {
+		osDark = false;
+		render(ThemeToggle);
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		expect(screen.getByRole('button', { name: 'Switch theme' })).toHaveTextContent('☀️');
+	});
+
+	it('starts dark when the OS prefers dark and there is no saved choice', () => {
 		render(ThemeToggle);
 		expect(document.documentElement.classList.contains('dark')).toBe(true);
+	});
+
+	it('live-updates when the OS scheme changes in auto mode', () => {
+		render(ThemeToggle); // OS dark, nothing saved
+		expect(document.documentElement.classList.contains('dark')).toBe(true);
+		setOsDark(false);
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		setOsDark(true);
+		expect(document.documentElement.classList.contains('dark')).toBe(true);
+	});
+
+	it('an explicit choice stops OS tracking and survives a reload', async () => {
+		const user = userEvent.setup();
+		const { unmount } = render(ThemeToggle); // OS dark, nothing saved → dark
+		await user.click(screen.getByRole('button', { name: 'Switch theme' })); // → light, saved
+		expect(localStorage.getItem('pihole-switcher-theme')).toBe('light');
+		setOsDark(true); // OS flips to dark — must not override the saved light
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		unmount();
+		render(ThemeToggle); // fresh "page load"
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
 	});
 
 	it('toggles the dark class and persists the choice', async () => {
