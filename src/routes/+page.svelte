@@ -6,20 +6,9 @@
 	import Pie from '../components/Pie.svelte';
 
 	type ChartTab = 'ads' | 'queries';
-	// 10-hue palette (Open-Color) tuned for the dark theme — must stay in sync
-	// with the default in src/components/Pie.svelte.
-	const PIE_PALETTE = [
-		'#ff6b8a', // coral pink
-		'#ffa94d', // orange
-		'#ffd43b', // amber
-		'#69db7c', // green
-		'#38d9a9', // mint
-		'#3bc9db', // cyan
-		'#4dabf7', // blue
-		'#9775fa', // violet
-		'#da77f2', // orchid
-		'#f783ac' // rose
-	];
+	// Theme-aware pie palette (Catppuccin accents) — defined as CSS variables
+	// in app.css, shared with the legend chips below.
+	const pieColor = (i: number) => `var(--pie-${(i % 10) + 1})`;
 
 	const DURATIONS = [
 		{ value: 300, label: '5m' },
@@ -218,24 +207,27 @@
 				</div>
 			</div>
 		{:else if blocking}
-			<div class="mt-4 flex flex-wrap items-center gap-3">
-				<span class="text-sm" style="color: var(--text-muted);">Pause blocking for</span>
-				<SegmentedControl
-					aria-label="Pause duration"
-					options={[...DURATIONS]}
-					value={duration}
-					onchange={(v) => (duration = Number(v))}
-				/>
-				<button
-					type="button"
-					data-testid="pause-btn"
-					onclick={pause}
-					disabled={acting}
-					class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
-					style="background: var(--bad-soft); color: var(--bad);"
-				>
-					Pause
-				</button>
+			<div class="mt-4">
+				<span class="block text-sm" style="color: var(--text-muted);">Pause blocking for</span>
+				<div class="mt-2 flex items-center gap-2">
+					<SegmentedControl
+						aria-label="Pause duration"
+						class="flex-1"
+						options={[...DURATIONS]}
+						value={duration}
+						onchange={(v) => (duration = Number(v))}
+					/>
+					<button
+						type="button"
+						data-testid="pause-btn"
+						onclick={pause}
+						disabled={acting}
+						class="shrink-0 rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
+						style="background: var(--bad-soft); color: var(--bad);"
+					>
+						Pause
+					</button>
+				</div>
 			</div>
 		{/if}
 	</section>
@@ -278,22 +270,20 @@
 				{#each activeDomains as d, i (d.domain)}
 					<li
 						class="inline-flex max-w-full items-center gap-1.5 rounded border px-2 py-0.5 text-xs"
-						style="border-color: color-mix(in srgb, {PIE_PALETTE[i % PIE_PALETTE.length]} 55%, transparent); color: var(--text-muted);"
+						style="border-color: color-mix(in srgb, {pieColor(i)} 55%, transparent); color: var(--text-muted);"
 					>
 						<span
 							class="h-2.5 w-2.5 shrink-0 rounded-[3px]"
-							style="background: color-mix(in srgb, {PIE_PALETTE[i % PIE_PALETTE.length]} 30%, transparent); border: 1px solid {PIE_PALETTE[i % PIE_PALETTE.length]};"
+							style="background: color-mix(in srgb, {pieColor(i)} 30%, transparent); border: 1px solid {pieColor(i)};"
 					></span>
-					<span class="max-w-[220px] truncate" title={d.domain}>{d.domain}</span>
-				</li>
-			{/each}
+						<span class="max-w-[220px] truncate" title={d.domain}>{d.domain}</span>
+					</li>
+				{/each}
 			</ul>
 
-			<div class="flex justify-center">
-				{#key chartTab}
-					<Pie domains={activeDomains} palette={PIE_PALETTE} size={420} />
-				{/key}
-			</div>
+			{#key chartTab}
+				<Pie domains={activeDomains} size={420} />
+			{/key}
 
 			{#if topLoadedAt}
 				<p class="mt-4 text-center text-xs" style="color: var(--text-muted);">

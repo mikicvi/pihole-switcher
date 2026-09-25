@@ -8,13 +8,14 @@
 		options: Option[];
 		value: string | number;
 		'aria-label'?: string;
+		'class'?: string;
 		onchange: (value: string | number) => void;
 	}
 
-	let { options, value, 'aria-label': ariaLabel = '', onchange }: Props = $props();
+	let { options, value, 'aria-label': ariaLabel = '', class: cls = '', onchange }: Props = $props();
 </script>
 
-<div role="tablist" aria-label={ariaLabel} class="inline-flex rounded-lg border p-0.5" style="border-color: var(--border); background: var(--surface-2);">
+<div role="tablist" aria-label={ariaLabel} class="inline-flex rounded-lg border p-0.5 {cls}" style="border-color: var(--border); background: var(--surface-2);">
 	{#each options as option (option.value)}
 		<button
 			type="button"

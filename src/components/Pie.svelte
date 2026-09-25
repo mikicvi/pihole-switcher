@@ -4,17 +4,16 @@
 	/**
 	 * Big solid SVG pie (wedge paths) with a Fluent/Chart.js-style entrance:
 	 * the whole pie starts as a line at 12 o'clock and sweeps open clockwise
-	 * as one continuous reveal. Slices are semi-transparent with a
-	 * background-coloured border between them, and the pie itself gets a thin
-	 * outer border — like the old app. Hovering a slice brightens it and shows
-	 * a fading tooltip with name + value. Re-key the component (Svelte {#key})
-	 * to replay the animation.
+	 * as one continuous reveal. Slices are semi-transparent with a thin
+	 * lighter border between them plus a thin outer ring. Hovering a slice
+	 * brightens it and shows a fading tooltip with name + value. Re-key the
+	 * component (Svelte {#key}) to replay the animation.
 	 */
 	interface Props {
 		domains: TopDomain[];
 		/** Colors for the top 10 slices; recycled beyond that. */
 		palette?: string[];
-		/** Pixel diameter (default 320). */
+		/** Maximum pixel diameter (default 420); shrinks to fit on small screens. */
 		size?: number;
 		/** Full reveal duration in ms (default 900). */
 		duration?: number;
@@ -22,20 +21,9 @@
 
 	let {
 		domains,
-		/** 10-hue palette (Open-Color) tuned for the dark theme. */
-		palette = [
-			'#ff6b8a', // coral pink
-			'#ffa94d', // orange
-			'#ffd43b', // amber
-			'#69db7c', // green
-			'#38d9a9', // mint
-			'#3bc9db', // cyan
-			'#4dabf7', // blue
-			'#9775fa', // violet
-			'#da77f2', // orchid
-			'#f783ac' // rose
-		],
-		size = 320,
+		// Theme-aware: defined in app.css (Catppuccin Latte / Mocha accents).
+		palette = Array.from({ length: 10 }, (_, i) => `var(--pie-${i + 1})`),
+		size = 420,
 		duration = 900
 	}: Props = $props();
 
@@ -139,7 +127,7 @@
 	<div
 		bind:this={wrapEl}
 		class="pie-appear relative"
-		style="width: {size}px; max-width: 100%; height: {size}px;"
+		style="width: min(100%, {size}px); aspect-ratio: 1 / 1; margin: 0 auto;"
 		role="img"
 		aria-label="pie chart of {domains.length} domains"
 	>
