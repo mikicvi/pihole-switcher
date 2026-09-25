@@ -37,8 +37,9 @@ describe('Home page', () => {
 	it('shows the active state and pause controls when blocking is on', async () => {
 		render(Page);
 		expect(await screen.findByText('Blocking is active')).toBeInTheDocument();
-		const sw = screen.getByRole('switch', { name: 'Ad blocking' });
-		expect(sw).toHaveAttribute('aria-checked', 'true');
+		// One action per state: no separate on/off switch duplicating the
+		// pause/resume buttons (the status text carries the state).
+		expect(screen.queryByRole('switch')).not.toBeInTheDocument();
 		expect(screen.getByTestId('pause-btn')).toBeInTheDocument();
 	});
 
@@ -47,8 +48,7 @@ describe('Home page', () => {
 		render(Page);
 		expect(await screen.findByTestId('resume-btn')).toBeInTheDocument();
 		expect(await screen.findByText(/resumes automatically in/)).toBeInTheDocument();
-		const sw = screen.getByRole('switch', { name: 'Ad blocking' });
-		expect(sw).toHaveAttribute('aria-checked', 'false');
+		expect(screen.queryByRole('switch')).not.toBeInTheDocument();
 	});
 
 	// FTL reflects the change: after POST /dns/blocking the status endpoint

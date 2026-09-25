@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getBlockingStatus, getTopDomains, setBlocking, type TopDomain } from '../lib/api.js';
 	import { setBlockingState as publishBlocking } from '../lib/blockingState.svelte.js';
-	import Switch from '../components/Switch.svelte';
 	import SegmentedControl from '../components/SegmentedControl.svelte';
 	import Pie from '../components/Pie.svelte';
 
@@ -125,11 +124,6 @@
 		}
 	}
 
-	async function onSwitchChange(checked: boolean) {
-		if (checked) await resume();
-		else await pause();
-	}
-
 	// Clock tick for the countdown.
 	$effect(() => {
 		const id = setInterval(() => (now = Date.now()), 1000);
@@ -162,22 +156,19 @@
 		class="rounded-xl border p-5"
 		style="border-color: var(--border); background: var(--surface);"
 	>
-		<div class="flex items-center justify-between gap-4">
-			<div>
-				<h1 class="text-lg font-semibold">Ad blocking</h1>
-				<p class="text-sm" style="color: var(--text-muted);">
-					{#if blocking === null}
-						Checking…
-					{:else if blocking}
-						Blocking is active
-					{:else if paused}
-						Paused — resumes automatically in {fmtRemaining(remaining)}
-					{:else}
-						Paused
-					{/if}
-				</p>
-			</div>
-			<Switch checked={blocking === true} disabled={acting} label="Ad blocking" onchange={onSwitchChange} />
+		<div>
+			<h1 class="text-lg font-semibold">Ad blocking</h1>
+			<p class="text-sm" style="color: var(--text-muted);">
+				{#if blocking === null}
+					Checking…
+				{:else if blocking}
+					Blocking is active
+				{:else if paused}
+					Paused — resumes automatically in {fmtRemaining(remaining)}
+				{:else}
+					Paused
+				{/if}
+			</p>
 		</div>
 
 		{#if !blocking && blocking !== null}

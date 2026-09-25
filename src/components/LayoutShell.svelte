@@ -45,6 +45,6 @@
 	</main>
 
 	<footer class="mx-auto w-full max-w-[720px] px-4 pb-6 text-center text-xs" style="color: var(--text-muted);">
-		Local/LAN only · FTL API proxied server-side · no password in the browser
+		Local/LAN only · FTL API proxied server-side
 	</footer>
 </div>
