@@ -10,7 +10,12 @@ export interface Config {
 	ftlBaseUrl: string;
 	/** Plain FTL API password (FTL v6 only accepts the plain password at /api/auth). */
 	apiPassword: string;
-	/** Public URL of the Pi-hole admin interface, shown/linked in the UI. May be null. */
+	/**
+	 * Public URL of the Pi-hole admin interface, shown/linked in the UI.
+	 * Defaults to the FTL host/port + `/admin`; override with PUBLIC_PIHOLE_ADMIN
+	 * (e.g. when PIHOLE_PROXY_TARGET is a Docker-internal address the browser
+	 * cannot reach). May only be null if config is incomplete.
+	 */
 	adminUrl: string | null;
 	/** Per-request timeout for FTL calls, in milliseconds. */
 	ftlTimeoutMs: number;
@@ -46,10 +51,14 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
 		);
 	}
 
+	// The FTL admin UI is served from the same host/port as the API, so the
+	// header link works out of the box; PUBLIC_PIHOLE_ADMIN overrides it.
+	const adminUrl = env.PUBLIC_PIHOLE_ADMIN || `http://${host}:${port}/admin`;
+
 	return {
 		ftlBaseUrl: `http://${host}:${port}/api`,
 		apiPassword: password,
-		adminUrl: env.PUBLIC_PIHOLE_ADMIN || null,
+		adminUrl,
 		ftlTimeoutMs,
 		authCooldownMs
 	};

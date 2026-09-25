@@ -25,7 +25,7 @@
     },
     {
       "name": "PUBLIC_PIHOLE_ADMIN",
-      "label": "Pi-hole admin UI URL (linked from the app header)",
+      "label": "Pi-hole admin UI URL — optional, defaults to FTL host + /admin",
       "default": "http://192.168.1.12:1010/admin/login"
     }
   ],

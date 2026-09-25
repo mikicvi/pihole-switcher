@@ -82,7 +82,7 @@ Create a custom template pointing at `mikicv/pihole-switcher`, container port
 | `PIHOLE_API_PASSWORD` | **yes** | — | Plain FTL v6 API password (Settings → Web server → API password). |
 | `PIHOLE_PROXY_TARGET` | no | `172.17.0.1` | FTL host *as seen from the container*. `172.17.0.1` is the docker bridge gateway — correct when pihole-switcher runs on the same machine as Pi-hole. Otherwise use the host's LAN IP. |
 | `PIHOLE_FTL_PORT` | no | `1010` | FTL API port (FTL v6 serves the REST API on **1010**, not 8080). |
-| `PUBLIC_PIHOLE_ADMIN` | no | — | Public admin URL shown as a link in the app header. |
+| `PUBLIC_PIHOLE_ADMIN` | no | `<PIHOLE_PROXY_TARGET>:<PIHOLE_FTL_PORT>/admin` | Override the admin link in the header (use when the FTL host is not browser-reachable, e.g. Docker-internal addresses). |
 | `PORT` | no | `3000` | Container listen port. |
 
 </details>

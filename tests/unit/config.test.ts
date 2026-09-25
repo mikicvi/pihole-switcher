@@ -10,25 +10,28 @@ describe('loadConfig', () => {
 		expect(() => loadConfig({ PIHOLE_API_PASSWORD: '' })).toThrow(/PIHOLE_API_PASSWORD/);
 	});
 
-	it('applies defaults for host and port', () => {
+	it('applies defaults for host, port and admin URL', () => {
 		const cfg = loadConfig({ PIHOLE_API_PASSWORD: 'secret' });
 		expect(cfg.ftlBaseUrl).toBe('http://192.168.1.1:1010/api');
 		expect(cfg.apiPassword).toBe('secret');
-		expect(cfg.adminUrl).toBeNull();
+		// Admin link defaults to the FTL host/port + /admin so it always works
+		// without extra configuration.
+		expect(cfg.adminUrl).toBe('http://192.168.1.1:1010/admin');
 		expect(cfg.ftlTimeoutMs).toBe(5000);
 		expect(cfg.authCooldownMs).toBe(10000);
 	});
 
-	it('builds the base URL from PIHOLE_PROXY_TARGET and PIHOLE_FTL_PORT', () => {
+	it('builds the base URL and admin URL from PIHOLE_PROXY_TARGET and PIHOLE_FTL_PORT', () => {
 		const cfg = loadConfig({
 			PIHOLE_API_PASSWORD: 'secret',
 			PIHOLE_PROXY_TARGET: '192.168.1.12',
 			PIHOLE_FTL_PORT: '1010'
 		});
 		expect(cfg.ftlBaseUrl).toBe('http://192.168.1.12:1010/api');
+		expect(cfg.adminUrl).toBe('http://192.168.1.12:1010/admin');
 	});
 
-	it('exposes PUBLIC_PIHOLE_ADMIN when set', () => {
+	it('lets PUBLIC_PIHOLE_ADMIN override the derived admin URL', () => {
 		const cfg = loadConfig({
 			PIHOLE_API_PASSWORD: 'secret',
 			PUBLIC_PIHOLE_ADMIN: 'http://192.168.1.12:1010/admin/login'
