@@ -1,40 +1,48 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=coverage)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=bugs)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher) [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=mikicvi_pihole-switcher&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=mikicvi_pihole-switcher)
+
 # pihole-switcher
 
-Switch Pi-hole DNS blocking on and off from a small, fast web UI — with the
-FTL API password living **only server-side**.
+Switch Pi-hole DNS blocking on and off from a small, fast web UI — with the FTL API password living **only server-side**.
 
-Built as a single SvelteKit (Svelte 5 + Node 22) container. No nginx, no env
-shim, no separate backend: one process serves the UI *and* proxies a tiny,
-allowlisted slice of the Pi-hole FTL API.
+Built as a single SvelteKit (Svelte 5 + Node 22) container. One process serves the UI _and_ proxies a tiny, allowlisted slice of the Pi-hole FTL API.
 
-![screenshot](docs/screenshot.png)
+# Preview
+
+<img width="300" alt="Dashboard: blocking card and top ads pie chart" src="docs/preview-dash.png">
+<img width="300" alt="Filter list: whitelist entries with search and pagination" src="docs/preview-filterlist.png">
 
 ## Features
 
-- **One-tap block/unblock** with auto-resume: pause blocking for 5m / 15m / 1h
-  / 24h and the app shows a live countdown, then restores blocking by itself.
-- **Top Ads / Top Queries charts** — a big animated pie (top 10 domains,
-  classic chart.js-style sweep animation, hover tooltips, 10-colour palette).
-- **Filter list manager** — view, search, add and remove whitelist (allow) and
-  blacklist (deny) entries with pagination.
-- **Dark/light themes**, mobile-first layout, works on a phone in the living
-  room.
-- **Server-side FTL proxy** — the browser only ever talks to *this* app. The
+- **Pause/resume ad blocking** — pick a duration (5m / 15m / 1h / 24h), watch
+  a live countdown with a progress bar, and blocking resumes itself. One
+  control per state: Pause when active, Resume now while paused.
+- **Top Ads / Top Queries charts** — an animated chart.js pie of the top 10
+  domains: sweep-in animation, hover tooltips, and clickable legend chips that
+  hide/show slices. Refreshes every 60s.
+- **Filter list** — the exact whitelist and blacklist: add domains, search the
+  list, per-domain enabled state, pagination.
+- **Themes that follow your OS** — Catppuccin (Latte light / Mocha dark).
+  Auto mode tracks the OS light/dark setting live; a manual toggle sticks.
+  Mobile-first layout, built for the phone in the living room.
+- **Server-side FTL proxy** — the browser only ever talks to _this_ app. The
   FTL API password and session tokens never reach the client bundle.
+- **Admin link in the header** — opens the Pi-hole admin UI in a new tab,
+  working out of the box (defaults to the FTL host + `/admin`).
 
 ## Security model
 
-| What | Where it lives |
-| --- | --- |
-| FTL API password | Container environment (`PIHOLE_API_PASSWORD`), server process only |
+| What                                    | Where it lives                                                             |
+| --------------------------------------- | -------------------------------------------------------------------------- |
+| FTL API password                        | Container environment (`PIHOLE_API_PASSWORD`), server process only         |
 | FTL session (`X-FTL-SID`, `X-FTL-CSRF`) | Server process memory, lazily acquired, single-flight, auto-retried on 401 |
-| Browser → app | Same-origin HTTP, no credentials, no secrets |
-| App → FTL | Plain HTTP to the FTL host (LAN-only app; see notes below) |
+| Browser → app                           | Same-origin HTTP, no credentials, no secrets                               |
+| App → FTL                               | Plain HTTP to the FTL host (LAN-only app; see notes below)                 |
 
-The proxy only forwards the five FTL endpoints the UI uses
-(`statusRaw`, `top_domains`, `top_queries`, `domains`, `groups`) — anything
-else gets a 404. Responses: `503 auth_failed` (bad/missing password),
-`502 unreachable` (FTL host not reachable), `404 unknown path`.
+The proxy only forwards the five FTL v6 endpoints the UI uses
+(`dns/blocking/status`, `dns/blocking`, `stats/top_domains`,
+`domains/allow/exact`, `domains/deny/exact`) — anything else gets a 404.
+Errors: `503 auth_failed` (bad/missing password), `502 ftl_unreachable`
+(FTL host not reachable), `404` unknown path.
 
 Deployed responses carry `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: DENY` and `Referrer-Policy: strict-origin-when-cross-origin`.
@@ -61,11 +69,11 @@ services:
     pihole-switcher:
         image: mikicv/pihole-switcher:latest
         ports:
-            - "3016:3000"
+            - '3016:3000'
         environment:
             PIHOLE_API_PASSWORD: your-ftl-api-password
-            # only if Pi-hole is NOT on the container host:
-            # PIHOLE_PROXY_TARGET: 192.168.1.50
+            # where FTL lives, as seen from the container (default 192.168.1.1):
+            # PIHOLE_PROXY_TARGET: 192.168.1.12
         restart: unless-stopped
 ```
 
@@ -77,24 +85,24 @@ services:
 Create a custom template pointing at `mikicv/pihole-switcher`, container port
 `3000`, published port `3016` (or your choice), environment variables:
 
-| Variable | Required | Default | Meaning |
-| --- | --- | --- | --- |
-| `PIHOLE_API_PASSWORD` | **yes** | — | Plain FTL v6 API password (Settings → Web server → API password). |
-| `PIHOLE_PROXY_TARGET` | no | `172.17.0.1` | FTL host *as seen from the container*. `172.17.0.1` is the docker bridge gateway — correct when pihole-switcher runs on the same machine as Pi-hole. Otherwise use the host's LAN IP. |
-| `PIHOLE_FTL_PORT` | no | `1010` | FTL API port (FTL v6 serves the REST API on **1010**, not 8080). |
-| `PUBLIC_PIHOLE_ADMIN` | no | `<PIHOLE_PROXY_TARGET>:<PIHOLE_FTL_PORT>/admin` | Override the admin link in the header (use when the FTL host is not browser-reachable, e.g. Docker-internal addresses). |
-| `PORT` | no | `3000` | Container listen port. |
+| Variable              | Required | Default                                         | Meaning                                                                                                                                                                               |
+| --------------------- | -------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PIHOLE_API_PASSWORD` | **yes**  | —                                               | Plain FTL v6 API password (Settings → Web server → API password).                                                                                                                     |
+| `PIHOLE_PROXY_TARGET` | no       | `192.168.1.1`                                   | FTL host _as seen from the container_. When pihole-switcher runs on the same machine as a Pi-hole in Docker, the docker bridge gateway (`172.17.0.1`) or the host's LAN IP usually works. |
+| `PIHOLE_FTL_PORT`     | no       | `1010`                                          | FTL API port (FTL v6 serves the REST API on **1010**, not 8080).                                                                                                                      |
+| `PUBLIC_PIHOLE_ADMIN` | no       | `<PIHOLE_PROXY_TARGET>:<PIHOLE_FTL_PORT>/admin` | Override the admin link in the header (use when the FTL host is not browser-reachable, e.g. Docker-internal addresses).                                                               |
+| `PORT`                | no       | `3000`                                          | Container listen port.                                                                                                                                                                |
 
 </details>
 
 After starting, open `http://<host>:3016`. The container ships a
-`HEALTHCHECK` on `/health` so Docker/Portainer shows it as *healthy* once the
+`HEALTHCHECK` on `/health` so Docker/Portainer shows it as _healthy_ once the
 app is serving.
 
 ### FTL v6 password — gotcha
 
-FTL v6 has **two** passwords: the plain *API password* (what this app needs)
-and the 64-character *app password* (a SHA-256 of the plain one). Only the
+FTL v6 has **two** passwords: the plain _API password_ (what this app needs)
+and the 64-character _app password_ (a SHA-256 of the plain one). Only the
 **plain** password is accepted by `/api/auth`. If you only have the app
 password, reset the API password in FTL → Settings → Web server.
 
@@ -122,7 +130,7 @@ Browser ──same origin──▶ SvelteKit (adapter-node, :3000)
                               │
                               ├─ /            UI (Svelte 5, Tailwind 4)
                               ├─ /health      liveness probe
-                              └─ /api/{statusRaw|top_domains|top_queries|domains|groups}
+                              └─ /api/dns/… /api/stats/… /api/domains/…   (5 allowlisted FTL v6 paths)
                                        │  allowlisted proxy
                                        ▼
                               FTL (:1010)  password + session kept server-side
