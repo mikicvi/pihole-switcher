@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Theme: Catppuccin (https://catppuccin.com) — a community-driven palette
+ * designed as the middle ground between low and high contrast, with a
+ * purpose-built light flavor (Latte) and dark flavor (Mocha).
+ * Neutrals + accents: Latte for light mode, Mocha for dark mode.
+ */
+:root {
+	/* Latte */
+	--bg: #e6e9ef; /* mantle — page canvas */
+	--surface: #eff1f5; /* base — cards */
+	--surface-2: #ccd0da; /* surface0 — controls */
+	--border: #ccd0da;
+	--text: #4c4f69;
+	--text-muted: #5c5f77;
+	--accent: #1e66f5;
+	--accent-soft: #dbe4ff;
+	--good: #40a02b;
+	--good-soft: #d9e8d2;
+	--bad: #d20f39;
+	--bad-soft: #f6d3dc;
+	--warn: #df8e1d;
+	--warn-soft: #f3e4c8;
+	/* Pie palette (Latte accents — deeper for contrast on light bg) */
+	--pie-1: #d20f39;
+	--pie-2: #fe640b;
+	--pie-3: #df8e1d;
+	--pie-4: #40a02b;
+	--pie-5: #179299;
+	--pie-6: #04a5e5;
+	--pie-7: #1e66f5;
+	--pie-8: #8839ef;
+	--pie-9: #ea76cb;
+	--pie-10: #7287fd;
+	/* Pie diameter: smaller on phones, capped on desktop */
+	--pie-max: 300px;
+}
+
+@media (min-width: 768px) {
+	:root {
+		--pie-max: 420px;
+	}
+}
+
+.dark {
+	/* Mocha */
+	--bg: #181825; /* mantle — page canvas */
+	--surface: #1e1e2e; /* base — cards */
+	--surface-2: #313244; /* surface0 — controls */
+	--border: #313244;
+	--text: #cdd6f4;
+	--text-muted: #a6adc8;
+	--accent: #89b4fa;
+	--accent-soft: #2b3355;
+	--good: #a6e3a1;
+	--good-soft: #2a4030;
+	--bad: #f38ba8;
+	--bad-soft: #452c37;
+	--warn: #f9e2af;
+	--warn-soft: #403d2c;
+	/* Pie palette (Mocha accents — soft pastels for dark bg) */
+	--pie-1: #f38ba8;
+	--pie-2: #fab387;
+	--pie-3: #f9e2af;
+	--pie-4: #a6e3a1;
+	--pie-5: #94e2d5;
+	--pie-6: #89dceb;
+	--pie-7: #89b4fa;
+	--pie-8: #b4befe;
+	--pie-9: #f5c2e7;
+	--pie-10: #cba6f7;
+	--pie-max: 300px;
+}
+
+@media (min-width: 768px) {
+	.dark {
+		--pie-max: 420px;
+	}
+}
+
+html {
+	background: var(--bg);
+	color: var(--text);
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		'Helvetica Neue',
+		sans-serif;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--text);
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: 100% 0;
+	}
+	100% {
+		background-position: -100% 0;
+	}
+}
+
+.skeleton {
+	background: linear-gradient(90deg, var(--surface-2) 30%, var(--border) 50%, var(--surface-2) 70%);
+	background-size: 200% 100%;
+	animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}

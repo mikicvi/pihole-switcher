@@ -1,0 +1,200 @@
+/**
+ * A tiny in-process mock of the Pi-hole FTL v6 REST API, backed by a real
+ * node:http server on an ephemeral port. Records every request so tests can
+ * assert on method/path/headers/body.
+ */
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
+
+export interface RecordedRequest {
+	method: string;
+	url: string;
+	headers: http.IncomingHttpHeaders;
+	body: string;
+}
+
+export interface MockFtlSession {
+	sid: string;
+	csrf: string;
+	validity: number;
+}
+
+export interface MockExactDomain {
+	domain: string;
+	date_modified: number;
+	enabled: boolean;
+	comment: string | null;
+	groups: number[];
+}
+
+export class MockFtl {
+	requests: RecordedRequest[] = [];
+	authCalls = 0;
+	/** When false, POST /api/auth returns 401. */
+	authOk = true;
+	/** Stateful blocking state — mirrors real FTL v6, which reports the flag
+	 *  as the string "enabled" | "disabled" (never a boolean). */
+	blockingEnabled = true;
+	blockingTimer: number | null = null;
+	/** Paths (with query) that should 401 exactly once, to simulate a dead session. */
+	rejectOnce: string[] = [];
+	session: MockFtlSession = { sid: 'sid-1', csrf: 'csrf-1', validity: 1800 };
+	/** Stateful exact-domain lists, mirroring FTL's domains table (PUT mutates). */
+	exactDomains: Record<'allow' | 'deny', MockExactDomain[]> = {
+		allow: [
+			{ domain: 'allowed.example.com', date_modified: 1700000000, enabled: true, comment: null, groups: [0] },
+			{ domain: 'denied.example.com', date_modified: 1700000123, enabled: false, comment: null, groups: [0] }
+		],
+		deny: [
+			{ domain: 'allowed.example.com', date_modified: 1700000000, enabled: true, comment: null, groups: [0] },
+			{ domain: 'denied.example.com', date_modified: 1700000123, enabled: false, comment: null, groups: [0] }
+		]
+	};
+
+	private server: http.Server;
+	url = '';
+
+	constructor() {
+		this.server = http.createServer((req, res) => this.handle(req, res));
+	}
+
+	async start(): Promise<this> {
+		await new Promise<void>((resolve) => this.server.listen(0, '127.0.0.1', resolve));
+		const { port } = this.server.address() as AddressInfo;
+		this.url = `http://127.0.0.1:${port}`;
+		return this;
+	}
+
+	async close(): Promise<void> {
+		await new Promise<void>((resolve, reject) =>
+			this.server.close((err) => (err ? reject(err) : resolve()))
+		);
+	}
+
+	private send(res: http.ServerResponse, status: number, body: unknown): void {
+		const text = JSON.stringify(body);
+		res.writeHead(status, { 'content-type': 'application/json' });
+		res.end(text);
+	}
+
+	private handle(req: http.IncomingMessage, res: http.ServerResponse): void {
+		let body = '';
+		req.on('data', (c: Buffer) => {
+			body += c.toString('utf8');
+		});
+		req.on('end', () => {
+			const url = req.url ?? '/';
+			this.requests.push({
+				method: req.method ?? 'GET',
+				url,
+				headers: req.headers,
+				body
+			});
+
+			if (url === '/api/auth' || url === '/auth') {
+				this.authCalls += 1;
+				if (!this.authOk) {
+					this.send(res, 401, { error: 'unauthorized' });
+					return;
+				}
+				this.send(res, 200, { session: { valid: true, ...this.session } });
+				return;
+			}
+
+			// Simulate a dead session on the next request to a listed path.
+			const idx = this.rejectOnce.indexOf(url);
+			if (idx !== -1) {
+				this.rejectOnce.splice(idx, 1);
+				this.send(res, 401, { error: 'unauthorized' });
+				return;
+			}
+
+			// Non-JSON error page support for rawFetch's fallback branch.
+			if (url.startsWith('/api/plain-text')) {
+				res.writeHead(200, { 'content-type': 'text/plain' });
+				res.end('not json');
+				return;
+			}
+
+			if (url.startsWith('/api/dns/blocking/status')) {
+				// Real FTL v6 shape: { blocking: "enabled" | "disabled", timer: number | null }
+				this.send(res, 200, {
+					blocking: this.blockingEnabled ? 'enabled' : 'disabled',
+					timer: this.blockingEnabled ? null : this.blockingTimer
+				});
+				return;
+			}
+			if (url.startsWith('/api/dns/blocking')) {
+				if (req.method === 'POST') {
+					let parsed: { blocking?: unknown; timer?: unknown } = {};
+					try {
+						parsed = JSON.parse(body || '{}');
+					} catch {
+						// keep defaults
+					}
+					const enabled = parsed.blocking === true || parsed.blocking === 'enabled';
+					this.blockingEnabled = enabled;
+					this.blockingTimer = enabled ? null : Number(parsed.timer ?? 0) || null;
+				}
+				this.send(res, 200, { success: true });
+				return;
+			}
+			if (url.startsWith('/api/stats/top_domains')) {
+				this.send(res, 200, {
+					domains: [
+						{ domain: 'ads.example.com', count: 7 },
+						{ domain: 'tracker.example.org', count: 2 }
+					]
+				});
+				return;
+			}
+			// PUT /api/domains/{type}/exact/{domain} — "Replace domain": mutate
+			// the stateful entry, keeping comment/groups from the request body.
+			const putMatch = url.match(/^\/api\/domains\/(allow|deny)\/exact\/(.+)$/);
+			if (putMatch && req.method === 'PUT') {
+				const type = putMatch[1] as 'allow' | 'deny';
+				const domain = decodeURIComponent(putMatch[2]);
+				let patch: { enabled?: boolean; comment?: string | null; groups?: number[] };
+				try {
+					patch = JSON.parse(body || '{}');
+				} catch {
+					this.send(res, 400, { error: 'bad_request' });
+					return;
+				}
+				const item = this.exactDomains[type].find((d) => d.domain === domain);
+				if (!item) {
+					this.send(res, 404, { error: 'not_found' });
+					return;
+				}
+				if (typeof patch.enabled === 'boolean') item.enabled = patch.enabled;
+				if (patch.comment !== undefined) item.comment = patch.comment;
+				if (patch.groups !== undefined) item.groups = patch.groups;
+				item.date_modified = 1700099999;
+				this.send(res, 200, { domains: [item], took: 0.001 });
+				return;
+			}
+
+			if (url.startsWith('/api/domains/allow/exact') || url.startsWith('/api/domains/deny/exact')) {
+				const type = url.includes('/allow/') ? 'allow' : 'deny';
+				if (req.method === 'POST') {
+					let domain = '';
+					try {
+						domain = (JSON.parse(body || '{}') as { domain?: string }).domain ?? '';
+					} catch {
+						domain = '';
+					}
+					if (domain === 'dup.com') {
+						this.send(res, 400, { error: 'UNIQUE constraint failed: domains.domain' });
+						return;
+					}
+					this.send(res, 201, { added: true });
+					return;
+				}
+				this.send(res, 200, { domains: this.exactDomains[type] });
+				return;
+			}
+
+			this.send(res, 404, { error: 'not_found' });
+		});
+	}
+}

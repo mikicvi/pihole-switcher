@@ -11,6 +11,10 @@
 # production
 /build
 
+# sveltekit
+/.svelte-kit
+/vite.config.ts.timestamp-*
+
 # misc
 .DS_Store
 .env.local
