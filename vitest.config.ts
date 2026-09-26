@@ -18,8 +18,12 @@ export default defineConfig({
 		setupFiles: ['./tests/setup.ts'],
 		coverage: {
 			provider: 'v8',
-			include: ['src/lib/**/*.ts'],
-			exclude: ['src/lib/api.ts'],
+			// Cover the whole app (components included) so Sonar sees per-file data.
+			include: ['src/**/*.{ts,svelte}'],
+			// Ambient type declarations have no runtime code.
+			exclude: ['src/app.d.ts', 'src/vite-env.d.ts'],
+			// lcov is consumed by Sonar (sonar.javascript.lcov.reportPaths).
+			reporter: ['text', 'html', 'json', 'clover', 'lcov'],
 			thresholds: {
 				lines: 90,
 				branches: 85,

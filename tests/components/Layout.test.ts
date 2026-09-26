@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import LayoutShell from '../../src/components/LayoutShell.svelte';
 import ThemeToggle from '../../src/components/ThemeToggle.svelte';
+import RootLayout from '../../src/routes/+layout.svelte';
 
 // The kit plugin provides the real $app/state module, whose default location
 // is not '/'; pin it for the tab-highlight assertion.
@@ -72,6 +73,38 @@ describe('LayoutShell', () => {
 		// Stubbed $app/state reports pathname '/'.
 		expect(screen.getByRole('tab', { name: 'Dashboard' })).toHaveAttribute('aria-selected', 'true');
 		expect(screen.getByRole('tab', { name: 'Filter list' })).toHaveAttribute('aria-selected', 'false');
+	});
+});
+
+describe('Root layout (+layout.svelte)', () => {
+	// ThemeToggle (rendered inside) needs a controllable matchMedia stub.
+	beforeEach(() => {
+		document.documentElement.className = '';
+		localStorage.clear();
+		vi.stubGlobal(
+			'matchMedia',
+			(query: string) => ({
+				media: query,
+				matches: true,
+				addEventListener: () => {},
+				removeEventListener: () => {},
+				dispatchEvent: () => true
+			})
+		);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('renders the shell, the status pill and the page content', () => {
+		render(RootLayout, {
+			data: { adminUrl: null },
+			children: createRawSnippet(() => ({ render: () => '<p id="page-content">dashboard body</p>' }))
+		});
+		expect(screen.getByRole('banner')).toBeInTheDocument();
+		expect(screen.getByTestId('status-pill')).toBeInTheDocument();
+		expect(screen.getByText('dashboard body')).toBeInTheDocument();
 	});
 });
 

@@ -84,9 +84,13 @@
 
 	$effect(() => {
 		// Data refresh (60s poll): update the chart in place with animation.
-		if (!chart) return;
+		// The reactive reads MUST happen before the `chart` guard: the first run
+		// occurs before onMount has created the chart, and Svelte 5 only tracks
+		// values actually read — guarding first would leave the effect with no
+		// dependencies, so the poll would refresh the legend chips but never the pie.
 		const labels = domains.map((d) => d.domain);
 		const data = domains.map((d) => d.count);
+		if (!chart) return;
 		const curLabels = chart.data.labels ?? [];
 		const cur = chart.data.datasets[0].data as number[];
 		if (curLabels.join('\n') === labels.join('\n') && data.every((v, i) => cur[i] === v)) {
