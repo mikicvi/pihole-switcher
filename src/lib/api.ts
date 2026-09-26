@@ -53,7 +53,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(`/api${path}`, {
 		...init,
-		headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) }
+		headers: { 'content-type': 'application/json', ...init?.headers }
 	});
 	const text = await res.text();
 	let body: unknown;

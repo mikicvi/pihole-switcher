@@ -90,7 +90,7 @@ describe('Pie (chart.js)', () => {
 		const { container } = render(Pie, { domains });
 		const canvas = container.querySelector('canvas');
 		expect(canvas).not.toBeNull();
-		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		await waitFor(() => expect(mocks.instances).toHaveLength(1));
 		const chart = mocks.instances[0];
 		expect(chart.config.type).toBe('pie');
 		expect(chart.config.data.labels).toEqual(['a.com', 'b.net', 'c.org']);
@@ -112,10 +112,10 @@ describe('Pie (chart.js)', () => {
 			const c = Array.from(
 				document.querySelectorAll<HTMLButtonElement>('.pie-legend-chip')
 			);
-			expect(c.length).toBe(3);
+			expect(c).toHaveLength(3);
 			return c;
 		});
-		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		await waitFor(() => expect(mocks.instances).toHaveLength(1));
 
 		await fireEvent.click(chips[1]); // b.net
 		expect(mocks.instances[0].hiddenIndexes).toContain(1);
@@ -134,7 +134,7 @@ describe('Pie (chart.js)', () => {
 
 	it('re-creates cleanly and destroys the chart on unmount', async () => {
 		const view = render(Pie, { domains });
-		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		await waitFor(() => expect(mocks.instances).toHaveLength(1));
 		view.unmount();
 		expect(mocks.instances[0].destroyed).toBe(true);
 	});
@@ -146,7 +146,7 @@ describe('Pie (chart.js)', () => {
 
 	it('updates the chart in place when the domain data changes (60s poll path)', async () => {
 		const { rerender } = render(Pie, { domains });
-		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		await waitFor(() => expect(mocks.instances).toHaveLength(1));
 		const chart = mocks.instances[0] as InstanceType<typeof mocks.Chart>;
 		const updatesAfterCreate = chart.updates;
 
@@ -178,7 +178,7 @@ describe('Pie (chart.js)', () => {
 
 	it('formats the tooltip label as "<value> · <pct>%" (and handles an empty total)', async () => {
 		render(Pie, { domains });
-		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		await waitFor(() => expect(mocks.instances).toHaveLength(1));
 		const chart = mocks.instances[0] as InstanceType<typeof mocks.Chart>;
 		const label = chart.options.plugins!.tooltip!.callbacks.label as (ctx: unknown) => string;
 		expect(label({ dataset: { data: [50, 30] }, parsed: 30 })).toBe(' 30 · 38%');
@@ -187,7 +187,7 @@ describe('Pie (chart.js)', () => {
 
 	it('restyles the chart in place when the theme flips on <html>', async () => {
 		const { unmount } = render(Pie, { domains });
-		await waitFor(() => expect(mocks.instances.length).toBe(1));
+		await waitFor(() => expect(mocks.instances).toHaveLength(1));
 		const chart = mocks.instances[0] as InstanceType<typeof mocks.Chart>;
 		const updatesBefore = chart.updates;
 
@@ -206,7 +206,7 @@ describe('Pie (chart.js)', () => {
 		root.style.setProperty('--pie-3', '#123456');
 		try {
 			render(Pie, { domains });
-			await waitFor(() => expect(mocks.instances.length).toBe(1));
+			await waitFor(() => expect(mocks.instances).toHaveLength(1));
 			const chart = mocks.instances[0] as InstanceType<typeof mocks.Chart>;
 			const ds = chart.config.data.datasets[0] as {
 				backgroundColor?: string[];

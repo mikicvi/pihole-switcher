@@ -26,7 +26,7 @@ async function forward(event: Parameters<RequestHandler>[0], method: Method) {
 
 	// Exact allowlist first, then pattern paths (variable domain segment).
 	const allowed = allowedPaths[path] ?? patternPaths.find((p) => p.pattern.test(path))?.methods;
-	if (!allowed || !allowed.includes(method)) {
+	if (!allowed?.includes(method)) {
 		return json({ error: 'not_found' }, { status: 404 });
 	}
 

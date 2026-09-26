@@ -35,9 +35,7 @@ let clientPromise: ReturnType<typeof createPiholeClient> | null = null;
  * production the server refuses to boot at all (see hooks.server.ts).
  */
 export function getClient() {
-	if (!clientPromise) {
-		clientPromise = createPiholeClient();
-	}
+	clientPromise ??= createPiholeClient();
 	return clientPromise;
 }
 
