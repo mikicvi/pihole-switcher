@@ -13,15 +13,19 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { FtlAuthError, FtlConnectionError } from '../../../lib/piholeClient.js';
-import { allowedPaths, getClient } from '../../../lib/proxyClient.js';
+import { allowedPaths, getClient, patternPaths } from '../../../lib/proxyClient.js';
+
+type Method = 'GET' | 'POST' | 'PUT';
 
 export const GET: RequestHandler = (event) => forward(event, 'GET');
 export const POST: RequestHandler = (event) => forward(event, 'POST');
+export const PUT: RequestHandler = (event) => forward(event, 'PUT');
 
-async function forward(event: Parameters<RequestHandler>[0], method: 'GET' | 'POST') {
+async function forward(event: Parameters<RequestHandler>[0], method: Method) {
 	const { path = '' } = event.params;
 
-	const allowed = allowedPaths[path];
+	// Exact allowlist first, then pattern paths (variable domain segment).
+	const allowed = allowedPaths[path] ?? patternPaths.find((p) => p.pattern.test(path))?.methods;
 	if (!allowed || !allowed.includes(method)) {
 		return json({ error: 'not_found' }, { status: 404 });
 	}
@@ -33,7 +37,7 @@ async function forward(event: Parameters<RequestHandler>[0], method: 'GET' | 'PO
 	}
 
 	let body: unknown;
-	if (method === 'POST') {
+	if (method === 'POST' || method === 'PUT') {
 		const text = await event.request.text();
 		if (text) {
 			try {
@@ -44,8 +48,16 @@ async function forward(event: Parameters<RequestHandler>[0], method: 'GET' | 'PO
 		}
 	}
 
+	let client;
 	try {
-		const client = getClient();
+		client = getClient();
+	} catch (err) {
+		// Misconfiguration (missing password, bad timeout): a config error is
+		// neither an FTL auth failure nor an unreachable FTL.
+		return json({ error: 'config_error', detail: (err as Error).message }, { status: 503 });
+	}
+
+	try {
 		const res = await client.request<unknown>(method, `/${path}`, { query, body });
 		if (!res.ok) {
 			// Pass FTL errors through with their status (401, 404, 500, ...).

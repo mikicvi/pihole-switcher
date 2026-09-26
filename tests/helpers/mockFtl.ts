@@ -19,6 +19,14 @@ export interface MockFtlSession {
 	validity: number;
 }
 
+export interface MockExactDomain {
+	domain: string;
+	date_modified: number;
+	enabled: boolean;
+	comment: string | null;
+	groups: number[];
+}
+
 export class MockFtl {
 	requests: RecordedRequest[] = [];
 	authCalls = 0;
@@ -31,6 +39,17 @@ export class MockFtl {
 	/** Paths (with query) that should 401 exactly once, to simulate a dead session. */
 	rejectOnce: string[] = [];
 	session: MockFtlSession = { sid: 'sid-1', csrf: 'csrf-1', validity: 1800 };
+	/** Stateful exact-domain lists, mirroring FTL's domains table (PUT mutates). */
+	exactDomains: Record<'allow' | 'deny', MockExactDomain[]> = {
+		allow: [
+			{ domain: 'allowed.example.com', date_modified: 1700000000, enabled: true, comment: null, groups: [0] },
+			{ domain: 'denied.example.com', date_modified: 1700000123, enabled: false, comment: null, groups: [0] }
+		],
+		deny: [
+			{ domain: 'allowed.example.com', date_modified: 1700000000, enabled: true, comment: null, groups: [0] },
+			{ domain: 'denied.example.com', date_modified: 1700000123, enabled: false, comment: null, groups: [0] }
+		]
+	};
 
 	private server: http.Server;
 	url = '';
@@ -129,7 +148,34 @@ export class MockFtl {
 				});
 				return;
 			}
+			// PUT /api/domains/{type}/exact/{domain} — "Replace domain": mutate
+			// the stateful entry, keeping comment/groups from the request body.
+			const putMatch = url.match(/^\/api\/domains\/(allow|deny)\/exact\/(.+)$/);
+			if (putMatch && req.method === 'PUT') {
+				const type = putMatch[1] as 'allow' | 'deny';
+				const domain = decodeURIComponent(putMatch[2]);
+				let patch: { enabled?: boolean; comment?: string | null; groups?: number[] };
+				try {
+					patch = JSON.parse(body || '{}');
+				} catch {
+					this.send(res, 400, { error: 'bad_request' });
+					return;
+				}
+				const item = this.exactDomains[type].find((d) => d.domain === domain);
+				if (!item) {
+					this.send(res, 404, { error: 'not_found' });
+					return;
+				}
+				if (typeof patch.enabled === 'boolean') item.enabled = patch.enabled;
+				if (patch.comment !== undefined) item.comment = patch.comment;
+				if (patch.groups !== undefined) item.groups = patch.groups;
+				item.date_modified = 1700099999;
+				this.send(res, 200, { domains: [item], took: 0.001 });
+				return;
+			}
+
 			if (url.startsWith('/api/domains/allow/exact') || url.startsWith('/api/domains/deny/exact')) {
+				const type = url.includes('/allow/') ? 'allow' : 'deny';
 				if (req.method === 'POST') {
 					let domain = '';
 					try {
@@ -144,12 +190,7 @@ export class MockFtl {
 					this.send(res, 201, { added: true });
 					return;
 				}
-				this.send(res, 200, {
-					domains: [
-						{ domain: 'allowed.example.com', date_modified: 1700000000, enabled: true },
-						{ domain: 'denied.example.com', date_modified: 1700000123, enabled: false }
-					]
-				});
+				this.send(res, 200, { domains: this.exactDomains[type] });
 				return;
 			}
 

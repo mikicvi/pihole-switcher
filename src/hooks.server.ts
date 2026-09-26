@@ -1,4 +1,21 @@
 import type { Handle } from '@sveltejs/kit';
+import { loadConfig } from './lib/config.js';
+
+/**
+ * Fail fast at boot in production: an invalid configuration (missing
+ * PIHOLE_API_PASSWORD, bad timeout) must never let the container come up
+ * "healthy" only to 503 every API call. This module is imported when the
+ * adapter-node server starts, before it listens. In dev/test the check is
+ * skipped so `npm run dev` can boot without a complete .env.
+ */
+if (process.env.NODE_ENV === 'production') {
+	try {
+		loadConfig();
+	} catch (err) {
+		console.error(`[pihole-switcher] refusing to start — ${(err as Error).message}`);
+		process.exit(1);
+	}
+}
 
 /**
  * Response security headers for every request (UI, API proxy, /health).

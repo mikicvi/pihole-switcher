@@ -23,10 +23,17 @@ export interface TopDomain {
 	count: number;
 }
 
+/**
+ * An exact-domain entry as returned by FTL v6. `comment` and `groups` are
+ * needed to UPDATE the entry: per the FTL v6 API docs a PUT must resend them
+ * or they are lost.
+ */
 export interface ListDomain {
 	domain: string;
 	date_modified: number;
 	enabled: boolean;
+	comment: string | null;
+	groups?: number[];
 }
 
 export interface AddDomainResult {
@@ -94,12 +101,28 @@ export function getExactDomains(type: 'allow' | 'deny'): Promise<{ domains: List
 }
 
 /**
+ * PUT /api/domains/{allow|deny}/exact/{domain} — "Replace domain" (FTL v6).
+ * Used to toggle `enabled`; `comment` and `groups` are resent so they are
+ * retained (required by the FTL v6 API).
+ */
+export function updateExactDomain(
+	type: 'allow' | 'deny',
+	domain: string,
+	body: { enabled: boolean; comment: string | null; groups: number[] }
+): Promise<Record<string, unknown>> {
+	return request<Record<string, unknown>>(`/domains/${type}/exact/${encodeURIComponent(domain)}`, {
+		method: 'PUT',
+		body: JSON.stringify(body)
+	});
+}
+
+/**
  * POST /api/domains/{allow|deny}/exact.
  * FTL signals "already exists" via a UNIQUE constraint error; normalize it.
  */
 export async function addExactDomain(type: 'allow' | 'deny', domain: string): Promise<AddDomainResult> {
 	try {
-		const res = await request<{ error?: string }>(`/domains/${type}/exact`, {
+		await request<{ error?: string }>(`/domains/${type}/exact`, {
 			method: 'POST',
 			body: JSON.stringify({ domain, comment: 'Added by pihole-switcher via API', groups: [0], enabled: true })
 		});

@@ -116,7 +116,12 @@ export class PiholeClient {
 				return session;
 			})
 			.catch((err) => {
-				this.lastLoginFailureAt = this.now();
+				// Only *auth* failures set the cooldown anchor. A connection
+				// failure (FTL unreachable) must not mask later 502s with a
+				// 503 auth_failed during the cooldown window.
+				if (err instanceof FtlAuthError) {
+					this.lastLoginFailureAt = this.now();
+				}
 				throw err;
 			})
 			.finally(() => {
@@ -259,6 +264,21 @@ export class PiholeClient {
 	): Promise<FtlResponse<{ error?: string } | { added: boolean }>> {
 		return this.request<{ error?: string } | { added: boolean }>('POST', `/domains/${type}/exact`, {
 			body: { domain, comment: 'Added by pihole-switcher via API', groups: [0], enabled: true }
+		});
+	}
+
+	/**
+	 * PUT /domains/{type}/exact/{domain} — FTL v6 "Replace domain". Per the
+	 * FTL v6 API docs, a PUT must resend `comment` and `groups` to retain them;
+	 * we only change `enabled` here.
+	 */
+	setExactDomain(
+		type: 'allow' | 'deny',
+		domain: string,
+		patch: { enabled: boolean; comment: string | null; groups: number[] }
+	): Promise<FtlResponse<Record<string, unknown>>> {
+		return this.request<Record<string, unknown>>('PUT', `/domains/${type}/exact/${encodeURIComponent(domain)}`, {
+			body: { comment: patch.comment, groups: patch.groups, enabled: patch.enabled }
 		});
 	}
 

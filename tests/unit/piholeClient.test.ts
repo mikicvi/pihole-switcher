@@ -181,6 +181,38 @@ describe('PiholeClient', () => {
 		await expect(c.getStatus()).rejects.toBeInstanceOf(FtlConnectionError);
 	});
 
+	it('connection failure does NOT set the auth cooldown (FTL back is retried)', async () => {
+		// Regression: lastLoginFailureAt used to be set on every login failure,
+		// so a transient FTL outage masked 502s as 503 auth_failed for 5 minutes.
+		const c = new PiholeClient({
+			config: makeConfig({ ftlBaseUrl: 'http://127.0.0.1:1/api', ftlTimeoutMs: 500 }),
+			now: clock.nowFn
+		});
+		await expect(c.getStatus()).rejects.toBeInstanceOf(FtlConnectionError);
+		// Within the cooldown window, the next attempt must still be a real
+		// retry (FtlConnectionError), not a cooldown rejection (FtlAuthError).
+		await expect(c.getStatus()).rejects.toBeInstanceOf(FtlConnectionError);
+	});
+
+	it('setExactDomain PUTs the domain, preserving comment and groups', async () => {
+		const c = client();
+		const res = await c.setExactDomain('allow', 'allowed.example.com', {
+			enabled: false,
+			comment: null,
+			groups: [0]
+		});
+		expect(res.ok).toBe(true);
+		const put = ftl.requests.find((r) => r.url === '/api/domains/allow/exact/allowed.example.com');
+		expect(put?.method).toBe('PUT');
+		expect(JSON.parse(put?.body ?? '{}')).toEqual({ comment: null, groups: [0], enabled: false });
+		// The mock is stateful: the next list reflects the change.
+		const list = await c.getExactDomains('allow');
+		const item = (list.data.domains as Array<{ domain: string; enabled: boolean }>).find(
+			(d) => d.domain === 'allowed.example.com'
+		);
+		expect(item?.enabled).toBe(false);
+	});
+
 	it('times out a dead FTL and maps it to FtlConnectionError', async () => {
 		// A server that accepts the connection but never answers.
 		const { createServer } = await import('node:http');

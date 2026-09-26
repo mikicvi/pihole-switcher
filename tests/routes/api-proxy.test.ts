@@ -2,17 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the FTL client module before the route imports it.
 const requestMock = vi.fn();
+let createImpl: () => unknown = () => ({ request: requestMock });
 vi.mock('../../src/lib/piholeClient.js', () => ({
-	createPiholeClient: () => ({ request: requestMock }),
+	createPiholeClient: () => createImpl(),
 	FtlAuthError: class FtlAuthError extends Error {},
 	FtlConnectionError: class FtlConnectionError extends Error {}
 }));
 
-import { GET, POST } from '../../src/routes/api/[...path]/+server.js';
-import { allowedPaths, _resetClientForTests } from '../../src/lib/proxyClient.js';
+import { GET, POST, PUT } from '../../src/routes/api/[...path]/+server.js';
+import { allowedPaths, patternPaths, _resetClientForTests } from '../../src/lib/proxyClient.js';
 import { FtlAuthError, FtlConnectionError } from '../../src/lib/piholeClient.js';
 
-function makeEvent(method: 'GET' | 'POST', path: string, search = '', body?: string) {
+function makeEvent(method: 'GET' | 'POST' | 'PUT', path: string, search = '', body?: string) {
 	const url = new URL(`http://localhost/api/${path}${search}`);
 	const init: RequestInit = { method };
 	if (body !== undefined) {
@@ -29,6 +30,7 @@ function makeEvent(method: 'GET' | 'POST', path: string, search = '', body?: str
 describe('/api/[...path] proxy route', () => {
 	beforeEach(() => {
 		requestMock.mockReset();
+		createImpl = () => ({ request: requestMock });
 		_resetClientForTests();
 	});
 
@@ -46,6 +48,12 @@ describe('/api/[...path] proxy route', () => {
 				'stats/top_domains'
 			].sort()
 		);
+	});
+
+	it('exposes pattern paths only for the domain-PUT toggle', () => {
+		expect(patternPaths.map((p) => [p.pattern.source, p.methods])).toEqual([
+			['^domains\\/(allow|deny)\\/exact\\/[^/]+$', ['PUT']]
+		]);
 	});
 
 	it('forwards GET with query string preserved', async () => {
@@ -98,6 +106,45 @@ describe('/api/[...path] proxy route', () => {
 	it('rejects methods not allowed for a known path', async () => {
 		const res = await POST(makeEvent('POST', 'stats/top_domains', '', '{}'));
 		expect(res.status).toBe(404);
+		expect(requestMock).not.toHaveBeenCalled();
+	});
+
+	it('forwards PUT /domains/allow/exact/<domain> (enable toggle)', async () => {
+		requestMock.mockResolvedValue({ ok: true, status: 200, data: { domains: [] } });
+		const res = await PUT(
+			makeEvent(
+				'PUT',
+				'domains/allow/exact/abc.com',
+				'',
+				JSON.stringify({ enabled: false, comment: null, groups: [0] })
+			)
+		);
+		expect(requestMock).toHaveBeenCalledWith('PUT', '/domains/allow/exact/abc.com', {
+			query: undefined,
+			body: { enabled: false, comment: null, groups: [0] }
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it('rejects non-PUT methods on pattern paths without touching FTL', async () => {
+		expect((await GET(makeEvent('GET', 'domains/allow/exact/abc.com'))).status).toBe(404);
+		expect((await POST(makeEvent('POST', 'domains/deny/exact/abc.com', '', '{}'))).status).toBe(404);
+		expect(requestMock).not.toHaveBeenCalled();
+	});
+
+	it('rejects deeper path segments that only prefix-match the pattern', async () => {
+		const res = await PUT(makeEvent('PUT', 'domains/allow/exact/abc.com/extra', '', '{}'));
+		expect(res.status).toBe(404);
+		expect(requestMock).not.toHaveBeenCalled();
+	});
+
+	it('maps a client-creation (config) failure to 503 config_error', async () => {
+		createImpl = () => {
+			throw new Error('Missing required environment variable PIHOLE_API_PASSWORD');
+		};
+		const res = await GET(makeEvent('GET', 'dns/blocking/status'));
+		expect(res.status).toBe(503);
+		expect(await res.json()).toMatchObject({ error: 'config_error' });
 		expect(requestMock).not.toHaveBeenCalled();
 	});
 

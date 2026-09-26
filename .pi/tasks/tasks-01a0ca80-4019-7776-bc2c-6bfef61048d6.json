@@ -1,0 +1,65 @@
+{
+  "nextId": 15,
+  "tasks": [
+    {
+      "id": "10",
+      "subject": "Fix cooldown anchor: only auth failures set it (piholeClient.ts)",
+      "description": "Copilot review #1: login cooldown anchor is set for ALL failed logins including FtlConnectionError (unreachable FTL). After a transient network outage, requests within cooldown throw FtlAuthError → route reports 503 auth_failed instead of retrying and reporting 502. Only FtlAuthError (real auth failures) should set the cooldown anchor. Lines ~121, 157, 235 in src/lib/piholeClient.ts.",
+      "status": "pending",
+      "activeForm": "Fixing login cooldown anchor",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790378501046,
+      "updatedAt": 1790378501046
+    },
+    {
+      "id": "11",
+      "subject": "Map/validate config failures (proxyClient.ts / hooks)",
+      "description": "Copilot review #2: createPiholeClient() → loadConfig() throws plain Error (missing password / bad timeout); route only maps FtlAuthError/FtlConnectionError → unhandled 500. Lazy creation means /health stays green and container doesn't fail fast as documented. Fix: fail-fast at boot in production (hooks.server.ts module-level check) and/or map config errors to 503 config_error in the route.",
+      "status": "pending",
+      "activeForm": "Fixing config failure handling",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790378501047,
+      "updatedAt": 1790378501047
+    },
+    {
+      "id": "12",
+      "subject": "Fix stale-response race in filterlist tab switching",
+      "description": "Copilot review #3: a request started for the previous list can resolve after the new list's request and assign stale `domains` (deny tab selected but allow entries shown). Fix with a generation token (or AbortController) — ignore stale responses before updating state. Lines ~44, 55 in src/routes/filterlist/+page.svelte.",
+      "status": "pending",
+      "activeForm": "Fixing filterlist race",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790378501048,
+      "updatedAt": 1790378501048
+    },
+    {
+      "id": "13",
+      "subject": "Resolve enable-toggle claim: implement or remove",
+      "description": "Copilot review #4: `enabled` renders read-only; PR description promises a per-domain enable toggle. Check official FTL v6 docs for the exact-domain enable endpoint; if it exists, implement (allowlist + api client + UI control + tests). Otherwise remove the claim from the PR description.",
+      "status": "pending",
+      "activeForm": "Resolving enable-toggle claim",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790378501049,
+      "updatedAt": 1790378501049
+    },
+    {
+      "id": "14",
+      "subject": "Fix 'SSegoe UI' font typo in app.css",
+      "description": "Copilot review #5: line 90 of src/app.css has `SSegoe UI` typo → systems with Segoe UI installed skip it. Correct to `Segoe UI`.",
+      "status": "pending",
+      "activeForm": "Fixing font typo",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1790378501049,
+      "updatedAt": 1790378501049
+    }
+  ]
+}

@@ -36,7 +36,6 @@ jobs:
             - name: Build
               run: npm run build
             - name: SonarCloud Scan
-              if: github.event_name == 'push'
               uses: SonarSource/sonarqube-scan-action@master
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

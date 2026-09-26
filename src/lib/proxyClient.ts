@@ -18,11 +18,21 @@ export const allowedPaths: Record<string, string[]> = {
 	'domains/deny/exact': ['GET', 'POST']
 };
 
+/**
+ * Pattern-based entries for paths with a variable segment (the domain name),
+ * checked after the exact allowlist. Same narrowness rule as allowedPaths:
+ * only the FTL calls the UI performs.
+ */
+export const patternPaths: { pattern: RegExp; methods: string[] }[] = [
+	{ pattern: /^domains\/(allow|deny)\/exact\/[^/]+$/, methods: ['PUT'] }
+];
+
 let clientPromise: ReturnType<typeof createPiholeClient> | null = null;
 
 /**
- * Lazily create (and memoize) the client so missing env fails at first
- * request with a 503 instead of crashing boot — and so tests can reset it.
+ * Lazily create (and memoize) the client so tests can reset it. A missing or
+ * invalid config throws here; the route maps it to 503 config_error, and in
+ * production the server refuses to boot at all (see hooks.server.ts).
  */
 export function getClient() {
 	if (!clientPromise) {

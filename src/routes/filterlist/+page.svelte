@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { addExactDomain, getExactDomains, type ListDomain } from '../../lib/api.js';
+	import { addExactDomain, getExactDomains, updateExactDomain, type ListDomain } from '../../lib/api.js';
 	import SegmentedControl from '../../components/SegmentedControl.svelte';
 	import Toast from '../../components/Toast.svelte';
 
@@ -15,6 +15,7 @@
 	let page = $state(1);
 
 	let adding = $state(false);
+	let toggling = $state<string | null>(null);
 	let newDomain = $state('');
 	let domainError = $state<string | null>(null);
 	let toast = $state<{ kind: 'success' | 'error' | 'warning'; message: string } | null>(null);
@@ -35,17 +36,24 @@
 		toastTimer = setTimeout(() => (toast = null), 3000);
 	}
 
+	// Generation token: a slow response for the previously selected list must
+	// not overwrite state once a newer load is in flight.
+	let loadSeq = 0;
+
 	async function load() {
+		const seq = ++loadSeq;
 		loading = true;
 		error = null;
 		try {
 			const res = await getExactDomains(listType);
+			if (seq !== loadSeq) return; // superseded by a newer load
 			domains = res.domains ?? [];
 			page = 1;
 		} catch {
+			if (seq !== loadSeq) return;
 			error = 'Could not load the filter list';
 		} finally {
-			loading = false;
+			if (seq === loadSeq) loading = false;
 		}
 	}
 
@@ -53,6 +61,26 @@
 		listType = v as ListType;
 		filter = '';
 		load();
+	}
+
+	async function toggleEnabled(d: ListDomain) {
+		if (toggling) return;
+		const next = !d.enabled;
+		toggling = d.domain;
+		try {
+			// FTL v6 PUT "replace domain" keeps `comment`/`groups` only if
+			// resent — send back what the list gave us.
+			await updateExactDomain(listType, d.domain, {
+				enabled: next,
+				comment: d.comment ?? null,
+				groups: d.groups ?? []
+			});
+			domains = domains.map((x) => (x.domain === d.domain ? { ...x, enabled: next } : x));
+		} catch {
+			showToast('error', `Could not update ${d.domain}`);
+		} finally {
+			toggling = null;
+		}
 	}
 
 	const DOMAIN_RE = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i;
@@ -198,12 +226,18 @@
 								{new Date(d.date_modified * 1000).toLocaleDateString()}
 							</td>
 							<td class="px-3 py-2">
-								<span
-									class="rounded-full px-2 py-0.5 text-xs"
+								<button
+									type="button"
+									role="switch"
+									aria-checked={d.enabled}
+									aria-label={`Toggle enabled for ${d.domain}`}
+									disabled={toggling !== null}
+									onclick={() => toggleEnabled(d)}
+									class="rounded-full px-2 py-0.5 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
 									style="background: {d.enabled ? 'var(--good-soft)' : 'var(--surface-2)'}; color: {d.enabled ? 'var(--good)' : 'var(--text-muted)'};"
 								>
 									{d.enabled ? 'yes' : 'no'}
-								</span>
+								</button>
 							</td>
 						</tr>
 					{/each}
