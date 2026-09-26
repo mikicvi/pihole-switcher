@@ -87,6 +87,24 @@ export function setBlocking(blocking: boolean, timer: number | null): Promise<un
 	});
 }
 
+export interface StatsSummary {
+	total: number;
+	blocked: number;
+	/** Blocked percentage as reported by FTL (0–100). */
+	pct: number;
+}
+
+/** GET /api/stats/summary — query counters for the active-state subtitle. */
+export function getStatsSummary(): Promise<StatsSummary> {
+	return request<{ queries?: { total?: number; blocked?: number; percent_blocked?: number } }>(
+		'/stats/summary'
+	).then((r) => ({
+		total: r.queries?.total ?? 0,
+		blocked: r.queries?.blocked ?? 0,
+		pct: r.queries?.percent_blocked ?? 0
+	}));
+}
+
 /** GET /api/stats/top_domains?blocked=true|false&count=N */
 export function getTopDomains(blocked: boolean, count = 10): Promise<{ domains: TopDomain[] }> {
 	const query = new URLSearchParams();

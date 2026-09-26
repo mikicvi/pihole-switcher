@@ -4,6 +4,7 @@ import {
 	addExactDomain,
 	getBlockingStatus,
 	getExactDomains,
+	getStatsSummary,
 	getTopDomains,
 	normalizeBlocking,
 	setBlocking,
@@ -132,6 +133,26 @@ describe('getTopDomains', () => {
 		await getTopDomains(true);
 		const [url] = fetchMock.mock.calls[0] as unknown as [string];
 		expect(url).toBe('/api/stats/top_domains?blocked=true&count=10');
+	});
+});
+
+describe('getStatsSummary', () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('maps the FTL queries block to the summary shape', async () => {
+		stubFetch(200, { queries: { total: 84704, blocked: 10894, percent_blocked: 12.86 } });
+		await expect(getStatsSummary()).resolves.toEqual({
+			total: 84704,
+			blocked: 10894,
+			pct: 12.86
+		});
+	});
+
+	it('defaults missing fields to zero (fresh FTL, counters not yet loaded)', async () => {
+		stubFetch(200, {});
+		await expect(getStatsSummary()).resolves.toEqual({ total: 0, blocked: 0, pct: 0 });
+		stubFetch(200, { queries: { total: 5 } });
+		await expect(getStatsSummary()).resolves.toEqual({ total: 5, blocked: 0, pct: 0 });
 	});
 });
 

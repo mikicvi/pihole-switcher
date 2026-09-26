@@ -45,7 +45,8 @@ describe('/api/[...path] proxy route', () => {
 				'dns/blocking/status',
 				'domains/allow/exact',
 				'domains/deny/exact',
-				'stats/top_domains'
+				'stats/top_domains',
+				'stats/summary'
 			].sort()
 		);
 	});

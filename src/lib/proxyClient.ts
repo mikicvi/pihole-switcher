@@ -14,6 +14,7 @@ export const allowedPaths: Record<string, string[]> = {
 	'dns/blocking/status': ['GET'],
 	'dns/blocking': ['GET', 'POST'],
 	'stats/top_domains': ['GET'],
+	'stats/summary': ['GET'],
 	'domains/allow/exact': ['GET', 'POST'],
 	'domains/deny/exact': ['GET', 'POST']
 };

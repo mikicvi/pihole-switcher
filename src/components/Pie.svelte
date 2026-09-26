@@ -29,7 +29,8 @@
 
 	let { domains, size = 420, duration = 900 }: Props = $props();
 
-	let canvas: HTMLCanvasElement | undefined;
+	// $state so the bind:this assignment is reactive (Svelte 5 warns otherwise).
+	let canvas: HTMLCanvasElement | undefined = $state();
 	let chart: Chart<'pie'> | null = null;
 	/** Domain names hidden via the legend, in index order of `domains`. */
 	let hidden = $state<string[]>([]);
@@ -221,11 +222,16 @@
 		{/each}
 	</ul>
 
+	<!-- role="img" lives on the wrapper: the a11y rule rejects a non-interactive
+	     role on <canvas> itself (it is an interactive element), so the canvas is
+	     hidden from the a11y tree and the labelled wrapper carries the semantics. -->
 	<div
 		class="pie-box"
+		role="img"
+		aria-label="Pie chart of {domains.length} domains"
 		style="width: min(100%, var(--pie-max, {size}px)); aspect-ratio: 1 / 1;"
 	>
-		<canvas bind:this={canvas} role="img" aria-label="pie chart of {domains.length} domains"></canvas>
+		<canvas bind:this={canvas} aria-hidden="true"></canvas>
 	</div>
 </div>
 {/if}

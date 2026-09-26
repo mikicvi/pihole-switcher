@@ -217,9 +217,13 @@
 				</thead>
 				<tbody>
 					{#each pageItems as d, i (d.domain)}
+						<!-- Full-row tap toggles the switch (bigger hit target on
+						     phones); the button stops propagation so a tap on the
+						     switch itself never double-fires. -->
 						<tr
-							class="border-t transition-colors hover:brightness-110"
+							class="cursor-pointer border-t transition-colors hover:brightness-110"
 							style="border-color: var(--border); {i % 2 === 1 ? 'background: color-mix(in srgb, var(--surface-2) 40%, transparent);' : ''}"
+							onclick={() => toggleEnabled(d)}
 						>
 							<td class="max-w-0 truncate px-3 py-2" title={d.domain}>{d.domain}</td>
 							<td class="px-3 py-2 tabular-nums" style="color: var(--text-muted);">
@@ -230,9 +234,12 @@
 									type="button"
 									role="switch"
 									aria-checked={d.enabled}
-									aria-label={`Toggle enabled for ${d.domain}`}
-									disabled={toggling !== null}
-									onclick={() => toggleEnabled(d)}
+										aria-label={`Toggle enabled for ${d.domain}`}
+										disabled={toggling !== null}
+										onclick={(e) => {
+											e.stopPropagation();
+											toggleEnabled(d);
+										}}
 									class="rounded-full px-2 py-0.5 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
 									style="background: {d.enabled ? 'var(--good-soft)' : 'var(--surface-2)'}; color: {d.enabled ? 'var(--good)' : 'var(--text-muted)'};"
 								>

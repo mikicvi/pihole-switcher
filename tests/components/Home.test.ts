@@ -1,23 +1,27 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor, within } from '@testing-library/svelte';
+import { fireEvent } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from '../../src/routes/+page.svelte';
 
 const mocks = {
 	getBlockingStatus: vi.fn(),
+	getStatsSummary: vi.fn(),
 	getTopDomains: vi.fn(),
 	setBlocking: vi.fn()
 };
 
 vi.mock('../../src/lib/api.js', () => ({
 	getBlockingStatus: (...a: unknown[]) => mocks.getBlockingStatus(...a),
+	getStatsSummary: (...a: unknown[]) => mocks.getStatsSummary(...a),
 	getTopDomains: (...a: unknown[]) => mocks.getTopDomains(...a),
 	setBlocking: (...a: unknown[]) => mocks.setBlocking(...a)
 }));
 
 function mockDefaults() {
 	mocks.getBlockingStatus.mockResolvedValue({ blocking: true, timer: 0 });
+	mocks.getStatsSummary.mockResolvedValue({ total: 1000, blocked: 120, pct: 12 });
 	mocks.getTopDomains.mockImplementation((blocked: boolean) =>
 		Promise.resolve({
 			domains: blocked
@@ -34,20 +38,59 @@ describe('Home page', () => {
 		mockDefaults();
 	});
 
-	it('shows the active state and pause controls when blocking is on', async () => {
+	it('shows the active state with stats subtitle and pause controls', async () => {
 		render(Page);
-		expect(await screen.findByText('Blocking is active')).toBeInTheDocument();
+		// The active subtitle carries the query stats, not a duplicated number.
+		const subtitle = await screen.findByTestId('status-subtitle');
+		expect(subtitle).toHaveTextContent('12.0% of 1,000 queries blocked');
 		// One action per state: no separate on/off switch duplicating the
-		// pause/resume buttons (the status text carries the state).
+		// pause/resume buttons (the header pill + subtitle carry the state).
 		expect(screen.queryByRole('switch')).not.toBeInTheDocument();
 		expect(screen.getByTestId('pause-btn')).toBeInTheDocument();
 	});
 
-	it('shows the paused state with countdown and resume button when blocking is off', async () => {
+	it('vibrates briefly when pausing and resuming', async () => {
+		const user = userEvent.setup();
+		const vibrate = vi.fn();
+		vi.stubGlobal('navigator', { ...navigator, vibrate });
+		const status = liveStatus({ blocking: true, timer: 0 });
+		render(Page);
+		await screen.findByTestId('pause-btn');
+		status.value = { blocking: false, timer: 900 };
+		await user.click(screen.getByTestId('pause-btn'));
+		expect(vibrate).toHaveBeenCalledWith(10);
+		await screen.findByTestId('resume-btn');
+		status.value = { blocking: true, timer: 0 };
+		await user.click(screen.getByTestId('resume-btn'));
+		expect(vibrate).toHaveBeenCalledTimes(2);
+		vi.unstubAllGlobals();
+	});
+
+	it('pull-to-refresh re-fetches when the pull crosses the threshold', async () => {
+		render(Page);
+		const statusCallsBefore = mocks.getBlockingStatus.mock.calls.length;
+		const root = screen.getByTestId('blocking-card').closest('.dash') as HTMLElement;
+		// Start at the top, pull down 200px (×0.5 dampening → 100, capped 72 ≥ 56).
+		fireEvent.touchStart(root, { touches: [{ clientY: 100 }] });
+		fireEvent.touchMove(root, { touches: [{ clientY: 300 }] });
+		await screen.findByTestId('pull-indicator');
+		fireEvent.touchEnd(root);
+		await waitFor(() =>
+			expect(mocks.getBlockingStatus.mock.calls.length).toBeGreaterThan(statusCallsBefore)
+		);
+	});
+
+	it('shows the paused state with hero countdown and resume button', async () => {
 		mocks.getBlockingStatus.mockResolvedValue({ blocking: false, timer: 300 });
 		render(Page);
 		expect(await screen.findByTestId('resume-btn')).toBeInTheDocument();
-		expect(await screen.findByText(/resumes automatically in/)).toBeInTheDocument();
+		// The card is the only numeric source while paused: one hero countdown
+		// plus the static "resumes automatically" microcopy (no other digits).
+		// The clock may already have ticked (04:59…), so match the mm:ss shape.
+		await waitFor(() =>
+			expect(screen.getByTestId('countdown')).toHaveTextContent(/\d{2}:\d{2}/)
+		);
+		expect(screen.getByText('resumes automatically')).toBeInTheDocument();
 		expect(screen.queryByRole('switch')).not.toBeInTheDocument();
 	});
 
@@ -64,7 +107,7 @@ describe('Home page', () => {
 		const user = userEvent.setup();
 		const status = liveStatus({ blocking: true, timer: 0 });
 		render(Page);
-		await screen.findByText('Blocking is active');
+		await screen.findByTestId('pause-btn');
 		status.value = { blocking: false, timer: 300 };
 		await user.click(screen.getByTestId('pause-btn'));
 		await waitFor(() =>
@@ -77,7 +120,7 @@ describe('Home page', () => {
 		const user = userEvent.setup();
 		const status = liveStatus({ blocking: true, timer: 0 });
 		render(Page);
-		await screen.findByText('Blocking is active');
+		await screen.findByTestId('pause-btn');
 		await user.click(screen.getByTestId('segment-900'));
 		status.value = { blocking: false, timer: 900 };
 		await user.click(screen.getByTestId('pause-btn'));
@@ -117,9 +160,16 @@ describe('Home page', () => {
 		// Never-resolving fetch keeps the skeleton state visible.
 		mocks.getTopDomains.mockImplementation(() => new Promise(() => {}));
 		const { container } = render(Page);
-		await screen.findByText('Blocking is active');
+		await screen.findByTestId('pause-btn');
 		const skeletons = container.querySelectorAll('.skeleton');
 		expect(skeletons.length).toBeGreaterThan(0);
+	});
+
+	it('shows the empty state when FTL has no top domains', async () => {
+		mocks.getTopDomains.mockResolvedValue({ domains: [] });
+		render(Page);
+		await screen.findByTestId('pause-btn');
+		expect(await screen.findByText('Nothing here yet.')).toBeInTheDocument();
 	});
 
 	it('shows an error banner with retry when the status fetch fails', async () => {

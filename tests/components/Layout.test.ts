@@ -53,10 +53,7 @@ describe('LayoutShell', () => {
 			blocking: true,
 			children: createRawSnippet(() => ({ render: () => '<span data-testid="content"></span>' }))
 		});
-		// The header renders an explicit Admin link; the status pill itself is
-		// also a link when an admin URL exists.
-		const link = screen.getByRole('link', { name: 'Admin ↗' });
-		expect(link).toHaveAttribute('href', 'http://192.168.1.12:1010/admin/login');
+		// The status pill IS the admin link (no separate header link).
 		const pill = screen.getByTestId('status-pill');
 		expect(pill.tagName).toBe('A');
 		expect(pill).toHaveAttribute('href', 'http://192.168.1.12:1010/admin/login');
@@ -64,7 +61,7 @@ describe('LayoutShell', () => {
 
 	it('shows a plain label when adminUrl is not configured', () => {
 		render(LayoutShell, { data: { adminUrl: null }, blocking: true, children: createRawSnippet(() => ({ render: () => '<span data-testid="content"></span>' })) });
-		expect(screen.queryByRole('link', { name: 'Admin ↗' })).not.toBeInTheDocument();
+		expect(screen.queryByRole('link')).not.toBeInTheDocument();
 		expect(screen.getByTestId('status-pill').tagName).toBe('SPAN');
 	});
 
@@ -142,16 +139,23 @@ describe('ThemeToggle', () => {
 		vi.unstubAllGlobals();
 	});
 
+	function btn() {
+		return screen.getByTestId('theme-toggle');
+	}
+
 	it('follows the OS preference on first visit (no saved choice)', () => {
 		osDark = false;
 		render(ThemeToggle);
 		expect(document.documentElement.classList.contains('dark')).toBe(false);
-		expect(screen.getByRole('button', { name: 'Switch theme' })).toHaveTextContent('☀️');
+		const b = btn();
+		expect(b).toHaveTextContent('🌗');
+		expect(b).toHaveAttribute('aria-label', 'Theme: auto (follows system)');
 	});
 
 	it('starts dark when the OS prefers dark and there is no saved choice', () => {
 		render(ThemeToggle);
 		expect(document.documentElement.classList.contains('dark')).toBe(true);
+		expect(btn()).toHaveTextContent('🌗'); // auto, not a pinned choice
 	});
 
 	it('live-updates when the OS scheme changes in auto mode', () => {
@@ -163,33 +167,77 @@ describe('ThemeToggle', () => {
 		expect(document.documentElement.classList.contains('dark')).toBe(true);
 	});
 
+	it('a saved auto mode follows the OS live', () => {
+		localStorage.setItem('pihole-switcher-theme', 'auto');
+		render(ThemeToggle);
+		expect(document.documentElement.classList.contains('dark')).toBe(true);
+		setOsDark(false);
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		expect(btn()).toHaveTextContent('🌗');
+	});
+
 	it('an explicit choice stops OS tracking and survives a reload', async () => {
 		const user = userEvent.setup();
-		const { unmount } = render(ThemeToggle); // OS dark, nothing saved → dark
-		await user.click(screen.getByRole('button', { name: 'Switch theme' })); // → light, saved
+		const { unmount } = render(ThemeToggle); // OS dark, auto mode → dark
+		await user.click(btn()); // auto → light, saved
 		expect(localStorage.getItem('pihole-switcher-theme')).toBe('light');
-		setOsDark(true); // OS flips to dark — must not override the saved light
+		setOsDark(false); // OS flips — must not override the pinned light
 		expect(document.documentElement.classList.contains('dark')).toBe(false);
 		unmount();
 		render(ThemeToggle); // fresh "page load"
 		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		expect(btn()).toHaveTextContent('☀️');
+		expect(btn()).toHaveAttribute('aria-label', 'Theme: light');
 	});
 
-	it('toggles the dark class and persists the choice', async () => {
+	it('cycles auto → light → dark → auto, persisting each mode', async () => {
 		const user = userEvent.setup();
+		osDark = true;
 		render(ThemeToggle);
-		await user.click(screen.getByRole('button', { name: 'Switch theme' }));
+		expect(btn()).toHaveTextContent('🌗');
+
+		await user.click(btn()); // → light
 		expect(document.documentElement.classList.contains('dark')).toBe(false);
 		expect(localStorage.getItem('pihole-switcher-theme')).toBe('light');
+		expect(btn()).toHaveTextContent('☀️');
 
-		await user.click(screen.getByRole('button', { name: 'Switch theme' }));
+		await user.click(btn()); // → dark
 		expect(document.documentElement.classList.contains('dark')).toBe(true);
 		expect(localStorage.getItem('pihole-switcher-theme')).toBe('dark');
+		expect(btn()).toHaveTextContent('🌙');
+
+		await user.click(btn()); // → auto (re-derives from OS: dark)
+		expect(document.documentElement.classList.contains('dark')).toBe(true);
+		expect(localStorage.getItem('pihole-switcher-theme')).toBe('auto');
+		expect(btn()).toHaveTextContent('🌗');
+	});
+
+	it('live OS tracking resumes once the cycle returns to auto', async () => {
+		const user = userEvent.setup();
+		osDark = true;
+		render(ThemeToggle);
+		await user.click(btn()); // → light (OS tracking off)
+		setOsDark(false);
+		expect(document.documentElement.classList.contains('dark')).toBe(false); // pinned light
+		await user.click(btn()); // → dark (still pinned)
+		await user.click(btn()); // → auto; OS is now light
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		setOsDark(true); // tracking is alive again
+		expect(document.documentElement.classList.contains('dark')).toBe(true);
 	});
 
 	it('honors a previously saved preference', () => {
 		localStorage.setItem('pihole-switcher-theme', 'light');
 		render(ThemeToggle);
 		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		expect(btn()).toHaveTextContent('☀️');
+	});
+
+	it('ignores garbage in storage and falls back to auto', () => {
+		localStorage.setItem('pihole-switcher-theme', 'banana');
+		osDark = false;
+		render(ThemeToggle);
+		expect(document.documentElement.classList.contains('dark')).toBe(false);
+		expect(btn()).toHaveTextContent('🌗');
 	});
 });

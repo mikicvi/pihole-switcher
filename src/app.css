@@ -15,7 +15,7 @@
 	--surface-2: #ccd0da; /* surface0 — controls */
 	--border: #ccd0da;
 	--text: #4c4f69;
-	--text-muted: #5c5f77;
+	--text-muted: #52546e; /* darkened from #5c5f77: ≥4.5:1 on canvas + card */
 	--accent: #1e66f5;
 	--accent-soft: #dbe4ff;
 	--good: #40a02b;
@@ -24,9 +24,11 @@
 	--bad-soft: #f6d3dc;
 	--warn: #df8e1d;
 	--warn-soft: #f3e4c8;
-	/* Pie palette (Latte accents — deeper for contrast on light bg) */
+	/* Pie palette (Latte accents — deeper for contrast on light bg).
+	   Slot 2 is rosewater, not peach: peach (#fe640b) and yellow (#df8e1d)
+	   read as one orange family, so the warm slot is a pink-red instead. */
 	--pie-1: #d20f39;
-	--pie-2: #fe640b;
+	--pie-2: #f37ba2;
 	--pie-3: #df8e1d;
 	--pie-4: #40a02b;
 	--pie-5: #179299;
@@ -61,9 +63,11 @@
 	--bad-soft: #452c37;
 	--warn: #f9e2af;
 	--warn-soft: #403d2c;
-	/* Pie palette (Mocha accents — soft pastels for dark bg) */
+	/* Pie palette (Mocha accents — soft pastels for dark bg).
+	   Slot 2 is rosewater, not peach (#fab387): keeps the two warm entries
+	   apart (pale rosewater vs cream yellow), mirroring the light theme. */
 	--pie-1: #f38ba8;
-	--pie-2: #fab387;
+	--pie-2: #f2d5cf;
 	--pie-3: #f9e2af;
 	--pie-4: #a6e3a1;
 	--pie-5: #94e2d5;
@@ -100,6 +104,20 @@ body {
 	color: var(--text);
 }
 
+/*
+ * iOS Safari auto-zooms the viewport in when a focused input's font is under
+ * 16px (and doesn't reliably zoom back out on blur). On phones, all form
+ * controls are 16px so the keyboard never triggers a zoom at all. Desktop
+ * keeps the smaller, denser text.
+ */
+@media (max-width: 767px) {
+	input,
+	select,
+	textarea {
+		font-size: 16px;
+	}
+}
+
 @keyframes shimmer {
 	0% {
 		background-position: 100% 0;
@@ -122,4 +140,16 @@ body {
 		animation-duration: 0.01ms !important;
 		transition-duration: 0.01ms !important;
 	}
+}
+
+/*
+ * Feedback polish: a brief press-in on every tappable button (44ms-class
+ * micro-interaction). The reduced-motion block above zeroes the transition,
+ * so this is a no-op there.
+ */
+button {
+	transition: transform 120ms ease;
+}
+button:not(:disabled):active {
+	transform: scale(0.97);
 }
