@@ -107,7 +107,13 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                platform: [linux/amd64, linux/arm64, linux/arm/v7]
+                include:
+                    - platform: linux/amd64
+                      plat_tag: amd64
+                    - platform: linux/arm64
+                      plat_tag: arm64
+                    - platform: linux/arm/v7
+                      plat_tag: armv7
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -126,7 +132,7 @@ jobs:
                   context: .
                   push: false
                   load: true
-                  tags: pihole-switcher:${{ matrix.platform }}
+                  tags: pihole-switcher:${{ matrix.plat_tag }}
                   platforms: ${{ matrix.platform }}
                   cache-from: type=gha
 
@@ -135,7 +141,8 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
                   TAG: ${{ github.event.release.tag_name }}
                   PLATFORM: ${{ matrix.platform }}
+                  PLAT_TAG: ${{ matrix.plat_tag }}
               run: |
                   fname="pihole-switcher_${TAG}_${PLATFORM//\//_}.tar.gz"
-                  docker save "pihole-switcher:${PLATFORM}" | gzip > "${fname}"
+                  docker save "pihole-switcher:${PLAT_TAG}" | gzip > "${fname}"
                   gh release upload "${TAG}" "${fname}" --clobber
