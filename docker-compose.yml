@@ -1,14 +1,44 @@
-version: '3.8'
+# pihole-switcher — SvelteKit single-container deploy.
+#
+# Quick start (Portainer custom template or plain docker compose):
+#   1. Put the FTL API password in the environment (PIHOLE_API_PASSWORD).
+#   2. Adjust PIHOLE_PROXY_TARGET if Pi-hole is not on the container host.
+#   3. `docker compose up -d`  (or create the container in Portainer).
+#
+# All variables can be left at their defaults for a standard Pi-hole docker
+# install on the same machine.
 
 services:
     pihole-switcher:
-        image: mikicv/pihole-switcher:latest
+        # Pin a release tag/digest for reproducible homelab deploys, e.g.
+        # mikicv/pihole-switcher:master-abc1234 (published per merge to master).
+        # `latest` always tracks the newest release.
+        image: mikicv/pihole-switcher:${PIHOLE_SWITCHER_TAG:-latest}
         ports:
-            - '3016:80'
+            - '${PIHOLE_SWITCHER_PORT:-3016}:3000'
         environment:
-            - REACT_APP_PIHOLE_BASE=${REACT_APP_PIHOLE_BASE:-/api}
-            - REACT_APP_PIHOLE_PASSWORD=${REACT_APP_PIHOLE_PASSWORD}
+            # FTL host as seen FROM THE CONTAINER. For docker bridge
+            # networking on the same host as Pi-hole, 172.17.0.1 (the bridge
+            # gateway) works; otherwise use the host's LAN IP.
             - PIHOLE_PROXY_TARGET=${PIHOLE_PROXY_TARGET:-172.17.0.1}
-            - REACT_APP_PIHOLE_ADMIN=${REACT_APP_PIHOLE_ADMIN:-}
+            # FTL API port (FTL v6 serves the REST API on 1010, not 8080).
+            - PIHOLE_FTL_PORT=${PIHOLE_FTL_PORT:-1010}
+            # Required: the plain Pi-hole FTL API password (FTL v6: Settings →
+            # Web server → API password). Server-side only — it never reaches
+            # the browser.
+            - PIHOLE_API_PASSWORD=${PIHOLE_API_PASSWORD}
+            # Optional: public URL of the Pi-hole admin UI, linked from the
+            # app header.
+            - PUBLIC_PIHOLE_ADMIN=${PUBLIC_PIHOLE_ADMIN:-}
+            # Optional: container port (default 3000 is built in).
+            - PORT=3000
         restart: unless-stopped
-        pull_policy: always
+        # Fail-fast on missing required config happens in-app (503 + clear
+        # message) rather than at container start.
+        security_opt:
+            - no-new-privileges:true
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"

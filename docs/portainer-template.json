@@ -1,0 +1,41 @@
+{
+  "id": "pihole-switcher",
+  "name": "Pi-hole Switcher",
+  "description": "Minimal Pi-hole blocking dashboard (SvelteKit). The FTL API password stays server-side; the browser only ever talks to this app. Proxy target + admin link are prefilled for a Pi-hole at 192.168.1.12:1010 — adjust to taste.",
+  "categories": ["self-hosted", "tools"],
+  "type": 1,
+  "image": "mikicv/pihole-switcher:latest",
+  "ports": ["3016:3000"],
+  "env": [
+    {
+      "name": "PIHOLE_API_PASSWORD",
+      "label": "Pi-hole FTL API password (required — FTL v6: Settings → Web server → API password)",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "PIHOLE_PROXY_TARGET",
+      "label": "Pi-hole host as seen from the container (LAN IP, or 172.17.0.1 for same-host docker bridge)",
+      "default": "192.168.1.12"
+    },
+    {
+      "name": "PIHOLE_FTL_PORT",
+      "label": "FTL API port (FTL v6 serves the REST API on 1010, not 8080)",
+      "default": "1010"
+    },
+    {
+      "name": "PUBLIC_PIHOLE_ADMIN",
+      "label": "Pi-hole admin UI URL — optional, defaults to FTL host + /admin",
+      "default": "http://192.168.1.12:1010/admin/login"
+    }
+  ],
+  "volumes": [],
+  "networks": [],
+  "command": "",
+  "options": "",
+  "restart": "always",
+  "portainer": {
+    "ce": true,
+    "edge": false
+  }
+}

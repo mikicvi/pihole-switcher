@@ -1,2 +1,23 @@
+# Only what the build actually needs reaches the Docker build context.
+# Keeping secrets and tooling out of the image is the point: .env (the FTL
+# password) must never be baked into a layer.
+.git
+.github
+.svelte-kit
+.vscode
 node_modules
+build
+coverage
+tests
 .env
+.env.*
+.dockerignore
+Dockerfile
+docker-compose*.yml
+*.md
+LICENSE
+sonar-project.properties
+.prettierrc
+.prettierignore
+.DS_Store
+vite.config.ts.timestamp-*
