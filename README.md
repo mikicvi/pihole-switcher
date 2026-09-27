@@ -8,8 +8,18 @@ Built as a single SvelteKit (Svelte 5 + Node 22) container. One process serves t
 
 # Preview
 
-<img width="300" alt="Dashboard: blocking card and top ads pie chart" src="docs/preview-dash.png">
-<img width="300" alt="Filter list: whitelist entries with search and pagination" src="docs/preview-filterlist.png">
+<p align="center">
+
+**Mobile**
+
+<img src="docs/preview-dash-mobile.png" width="300" alt="Dashboard (mobile): blocking card and top ads pie chart"> <img src="docs/preview-filterlist-mobile.png" width="300" alt="Filter list (mobile): whitelist entries with search and pagination">
+
+**Desktop**
+
+<img src="docs/preview-dash-desktop.png" width="760" alt="Dashboard (desktop): two-column layout with blocking card, legend and pie chart">
+<img src="docs/preview-filterlist-desktop.png" width="760" alt="Filter list (desktop): full domain table with pagination">
+
+</p>
 
 ## Features
 
