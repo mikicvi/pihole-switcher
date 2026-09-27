@@ -8,6 +8,8 @@ on:
         branches:
             - master
         types: [closed]
+    release:
+        types: [published]
     workflow_dispatch:
 
 permissions:
@@ -34,7 +36,8 @@ jobs:
                 github.ref == 'refs/heads/master') ||
             (github.event_name == 'pull_request' &&
                 github.event.pull_request.merged == true &&
-                github.base_ref != 'master')
+                github.base_ref != 'master') ||
+            github.event_name == 'release'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
@@ -76,6 +79,8 @@ jobs:
                   tags: |
                       type=ref,event=branch
                       type=ref,event=pr
+                      type=semver,pattern={{raw}}
+                      type=semver,pattern={{version}}
                       type=sha,prefix={{branch}}-
                       type=raw,value=latest,enable={{is_default_branch}}
 
@@ -89,3 +94,48 @@ jobs:
                   platforms: linux/amd64,linux/arm64,linux/arm/v7
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
+
+    # GitHub releases: attach each platform's image as a loadable tarball
+    # (docker load < pihole-switcher_v1.0.0_linux-arm64.tar.gz). Only runs
+    # for published releases; the multi-arch manifest lives on Docker Hub.
+    attach-images:
+        if: github.event_name == 'release'
+        needs: build-and-push
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [linux/amd64, linux/arm64, linux/arm/v7]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              with:
+                  platforms: ${{ matrix.platform }}
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build single-platform image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  push: false
+                  load: true
+                  tags: pihole-switcher:${{ matrix.platform }}
+                  platforms: ${{ matrix.platform }}
+                  cache-from: type=gha
+
+            - name: Save and upload image tarball
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ github.event.release.tag_name }}
+                  PLATFORM: ${{ matrix.platform }}
+              run: |
+                  fname="pihole-switcher_${TAG}_${PLATFORM//\//_}.tar.gz"
+                  docker save "pihole-switcher:${PLATFORM}" | gzip > "${fname}"
+                  gh release upload "${TAG}" "${fname}" --clobber
