@@ -16,6 +16,7 @@ ARG NPM_INSTALL_FORCE=true
 
 # ---- Build stage ----
 FROM node:22-alpine AS build
+ARG NPM_INSTALL_FORCE
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --force=$NPM_INSTALL_FORCE
