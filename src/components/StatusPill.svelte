@@ -36,7 +36,7 @@
 
 	const word = $derived(blocking === null ? '…' : blocking ? 'Active' : 'Paused');
 	const wordColor = $derived(
-		blocking === null ? 'var(--text-muted)' : blocking ? 'var(--good)' : 'var(--warn)'
+		blocking === null ? 'var(--text-muted)' : blocking ? 'var(--good-ink)' : 'var(--warn-ink)'
 	);
 
 	/**
@@ -76,7 +76,7 @@
 			<span
 				class="pill-ring"
 				aria-hidden="true"
-				style="background: conic-gradient(var(--warn) {ringFraction * 360}deg, transparent 0deg);"
+				style="background: conic-gradient(var(--warn-ink) {ringFraction * 360}deg, transparent 0deg);"
 			></span>
 		{/if}
 		<span
@@ -94,7 +94,7 @@
 			<span
 				class="pill-ring"
 				aria-hidden="true"
-				style="background: conic-gradient(var(--warn) {ringFraction * 360}deg, transparent 0deg);"
+				style="background: conic-gradient(var(--warn-ink) {ringFraction * 360}deg, transparent 0deg);"
 			></span>
 		{/if}
 		<span
@@ -118,13 +118,23 @@
 		border-radius: 999px;
 		border: 1px solid var(--border);
 		/* Glass: translucent surface + blur so header content ghosts through. */
-		background: color-mix(in srgb, var(--surface) 55%, transparent);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		background: var(--glass);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		box-shadow: var(--shadow-1), var(--hairline);
 		font-size: 0.75rem;
 		font-weight: 600;
-		letter-spacing: 0.01em;
-		transition: border-color 0.15s ease;
+		letter-spacing: 0.03em;
+		font-variant-numeric: tabular-nums;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	@media (hover: hover) {
+		.status-pill:hover {
+			border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+			box-shadow: var(--shadow-2), var(--hairline);
+		}
 	}
 	a.status-pill:focus-visible {
 		outline: 2px solid var(--accent);
@@ -137,13 +147,20 @@
 		height: 8px;
 		border-radius: 50%;
 		background: var(--text-muted);
-		transition: background-color 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 	.pill-dot.dot-active {
-		background: var(--good);
+		/* Ink, not the vivid accent: --good on the pill's own wash is 2.6:1,
+		   under even the 3:1 bar for a graphic. */
+		background: var(--good-ink);
+		/* Real glow: a spread ring in the state color, not just a fill. */
+		box-shadow: 0 0 0 3px var(--glow-good);
 	}
 	.pill-dot.dot-paused {
-		background: var(--warn);
+		background: var(--warn-ink);
+		box-shadow: 0 0 0 3px var(--glow-warn);
 	}
 	/* Slow breathing halo behind the active dot. */
 	.pill-dot.dot-active::after {

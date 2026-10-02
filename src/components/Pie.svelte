@@ -210,7 +210,6 @@
 				<button
 					type="button"
 					class="pie-legend-chip {off ? 'pie-legend-chip-off' : ''}"
-					class:dark={off}
 					aria-pressed={off}
 					title={off ? `Show ${d.domain}` : `Hide ${d.domain} from the chart`}
 					onclick={() => toggle(d.domain, i)}
@@ -259,6 +258,7 @@
 		border-radius: 999px;
 		border: 1px solid var(--border);
 		background: var(--surface-2);
+		box-shadow: var(--hairline);
 		font-size: 12.5px;
 		font-family: inherit;
 		color: var(--text-muted);
@@ -267,11 +267,18 @@
 			border-color 0.15s ease,
 			color 0.15s ease,
 			opacity 0.15s ease,
-			transform 0.1s ease;
+			box-shadow 0.15s ease,
+			transform 0.15s ease;
 	}
-	.pie-legend-chip:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	/* Hover lift + accent border. The global `button:not(:disabled):active`
+	   press scale out-specifies this rule, so the press feedback survives. */
+	@media (hover: hover) {
+		.pie-legend-chip:hover {
+			color: var(--text);
+			border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+			box-shadow: var(--shadow-1), var(--hairline);
+			transform: translateY(-1px);
+		}
 	}
 	.pie-legend-chip:active {
 		transform: scale(0.97);
@@ -291,6 +298,9 @@
 		height: 10px;
 		border-radius: 3px;
 		flex-shrink: 0;
+		/* Inner ring: pale pie colors stay legible on a pale chip (and vice
+		   versa) without changing the dot's fill. */
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 22%, transparent);
 	}
 	.pie-legend-text {
 		max-width: 220px;
@@ -298,7 +308,26 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	/* Halo behind the pie: a soft radial glow + drop shadow so the chart sits
+	   on the page rather than floating in it. Painted behind the canvas. */
 	.pie-box {
+		position: relative;
 		margin: 0 auto;
+	}
+	.pie-box::before {
+		content: '';
+		position: absolute;
+		inset: 8%;
+		border-radius: 50%;
+		background: radial-gradient(
+			closest-side,
+			color-mix(in srgb, var(--accent) 10%, transparent),
+			transparent 78%
+		);
+		box-shadow: var(--shadow-2);
+		pointer-events: none;
+	}
+	.pie-box canvas {
+		position: relative;
 	}
 </style>
