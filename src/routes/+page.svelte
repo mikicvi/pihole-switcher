@@ -360,7 +360,7 @@
 		</section>
 
 		<!-- Chart section: calm, single dominant pie (like the classic UI). -->
-		<section data-testid="chart-section" class="chart-sec rise pt-2 text-center">
+		<section data-testid="chart-section" class="rise pt-2 text-center">
 			<div class="chart-tabs mb-4 flex items-center justify-center gap-2" role="tablist" aria-label="Chart">
 				{#each (['ads', 'queries'] as const) as t (t)}
 					<button
@@ -554,18 +554,6 @@
 	.dash > .error-banner.rise {
 		animation-delay: 80ms;
 	}
-
-	/* Chart section: a hairline divider separates it from the hero card on the
-	   stacked mobile layout without introducing a second card surface. */
-	.chart-sec {
-		border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-	}
-	@media (min-width: 1024px) {
-		.chart-sec {
-			border-top: 0;
-		}
-	}
-
 	.chart-tab {
 		position: relative;
 		padding: 0.4rem 0.9rem;
