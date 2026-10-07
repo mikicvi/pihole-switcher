@@ -8,6 +8,30 @@
 		<meta name="theme-color" media="(prefers-color-scheme: light)" content="#e6e9ef" />
 		<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#181825" />
 		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<script>
+			/*
+			 * Pre-paint theme: the SSR shell ships with class="dark" (the safe
+			 * default for a no-JS / first-visit render), so a pinned light mode
+			 * would otherwise flash Mocha before ThemeToggle mounts. Read the
+			 * stored mode (auto|light|dark; anything else → auto) and settle
+			 * <html> before the first paint. Inline + tiny: no external request.
+			 */
+			(function () {
+				try {
+					var v = localStorage.getItem('pihole-switcher-theme');
+					var dark =
+						v === 'light'
+							? false
+							: v === 'dark'
+								? true
+								: window.matchMedia &&
+									window.matchMedia('(prefers-color-scheme: dark)').matches;
+					document.documentElement.classList.toggle('dark', dark);
+				} catch (e) {
+					/* storage unavailable (private mode) — keep the SSR default */
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

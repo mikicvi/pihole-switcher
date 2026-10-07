@@ -84,8 +84,45 @@
 	type="button"
 	onclick={toggle}
 	aria-label={label}
-	class="rounded-md border p-1.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
-	style="background: var(--surface); border-color: var(--border); color: var(--text);"
+	class="theme-btn rounded-full border p-0 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
 >
 	{icon}
 </button>
+
+<style>
+	/*
+	 * A 36px dial: glass plate + inner top highlight, glyph centred. Hover
+	 * rotates/scales the glyph only (transform — compositor-cheap); the press
+	 * scale from app.css still wins because `button:not(:disabled):active`
+	 * out-specifies `:hover` here.
+	 */
+	.theme-btn {
+		/* Never let the flex row squash the dial into an oval at narrow
+		   widths; the tabs give way instead. */
+		flex-shrink: 0;
+		width: 36px;
+		height: 36px;
+		display: grid;
+		place-items: center;
+		border-color: var(--border);
+		background: var(--glass);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		color: var(--text);
+		box-shadow: var(--shadow-1), var(--hairline);
+		transition:
+			transform 160ms var(--spring),
+			box-shadow 0.15s ease,
+			border-color 0.15s ease;
+	}
+	@media (hover: hover) {
+		.theme-btn:hover {
+			transform: rotate(-12deg) scale(1.06);
+			border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+			box-shadow: var(--shadow-2), var(--hairline);
+		}
+	}
+	.theme-btn:focus-visible {
+		box-shadow: var(--ring), var(--hairline);
+	}
+</style>

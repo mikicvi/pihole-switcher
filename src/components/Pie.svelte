@@ -210,7 +210,6 @@
 				<button
 					type="button"
 					class="pie-legend-chip {off ? 'pie-legend-chip-off' : ''}"
-					class:dark={off}
 					aria-pressed={off}
 					title={off ? `Show ${d.domain}` : `Hide ${d.domain} from the chart`}
 					onclick={() => toggle(d.domain, i)}
@@ -242,13 +241,17 @@
 		flex-direction: column;
 		gap: 16px;
 	}
+	/* Same max-width as the pie box, so the chips and the chart form one
+	   centered column. A legend wider than the pie leaves a dead band on both
+	   sides of the circle, which reads as a large empty gap on phones. */
 	.pie-legend {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 8px 10px;
 		list-style: none;
-		margin: 0;
+		max-width: var(--pie-max, 420px);
+		margin: 0 auto;
 		padding: 0;
 	}
 	.pie-legend-chip {
@@ -259,6 +262,7 @@
 		border-radius: 999px;
 		border: 1px solid var(--border);
 		background: var(--surface-2);
+		box-shadow: var(--hairline);
 		font-size: 12.5px;
 		font-family: inherit;
 		color: var(--text-muted);
@@ -267,11 +271,18 @@
 			border-color 0.15s ease,
 			color 0.15s ease,
 			opacity 0.15s ease,
-			transform 0.1s ease;
+			box-shadow 0.15s ease,
+			transform 0.15s ease;
 	}
-	.pie-legend-chip:hover {
-		color: var(--text);
-		border-color: var(--accent);
+	/* Hover lift + accent border. The global `button:not(:disabled):active`
+	   press scale out-specifies this rule, so the press feedback survives. */
+	@media (hover: hover) {
+		.pie-legend-chip:hover {
+			color: var(--text);
+			border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+			box-shadow: var(--shadow-1), var(--hairline);
+			transform: translateY(-1px);
+		}
 	}
 	.pie-legend-chip:active {
 		transform: scale(0.97);
@@ -291,6 +302,9 @@
 		height: 10px;
 		border-radius: 3px;
 		flex-shrink: 0;
+		/* Inner ring: pale pie colors stay legible on a pale chip (and vice
+		   versa) without changing the dot's fill. */
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 22%, transparent);
 	}
 	.pie-legend-text {
 		max-width: 220px;
@@ -298,7 +312,28 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	/* Elevation. chart.js draws the pie as the inscribed circle of the canvas
+	   (measured: the drawn crust spans the full 358px box with 0px bleed), so
+	   `border-radius: 50%` makes the box's shadow follow the pie's own
+	   silhouette instead of peeking out at the corners of a square. No
+	   pseudo-element glow: anything painted *behind* an opaque pie is invisible,
+	   and a smaller circle behind it only ever showed as an oval when the box
+	   went non-square. No `overflow` clip either - the dataset uses
+	   `hoverOffset: 6`, and a hovered slice pops 6px past the box. */
 	.pie-box {
+		position: relative;
 		margin: 0 auto;
+		border-radius: 50%;
+		box-shadow: var(--shadow-2);
+	}
+	/* Out of flow on purpose. chart.js writes inline width/height onto the
+	   canvas; as a flow child those dimensions become the flex item's automatic
+	   minimum height, which outranks `aspect-ratio: 1 / 1` when the window
+	   shrinks (the canvas keeps the old, taller size for a tick: 300x420 box).
+	   Absolutely positioned, the canvas cannot stretch the box, so the box's
+	   height is the aspect ratio alone and stays square. */
+	.pie-box canvas {
+		position: absolute;
+		inset: 0;
 	}
 </style>

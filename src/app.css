@@ -3,6 +3,29 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
+ * Tailwind bridge: expose the Catppuccin tokens as color utilities
+ * (bg-surface, text-muted, border-border, …) so theme coloring does not have
+ * to live in inline style strings. `inline` keeps the var() indirection, so
+ * the .dark block below still drives every utility.
+ */
+@theme inline {
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-border: var(--border);
+	--color-ink: var(--text);
+	--color-muted: var(--text-muted);
+	--color-accent: var(--accent);
+	--color-accent-soft: var(--accent-soft);
+	--color-good: var(--good);
+	--color-good-soft: var(--good-soft);
+	--color-bad: var(--bad);
+	--color-bad-soft: var(--bad-soft);
+	--color-warn: var(--warn);
+	--color-warn-soft: var(--warn-soft);
+}
+
+/*
  * Theme: Catppuccin (https://catppuccin.com) — a community-driven palette
  * designed as the middle ground between low and high contrast, with a
  * purpose-built light flavor (Latte) and dark flavor (Mocha).
@@ -24,6 +47,21 @@
 	--bad-soft: #f6d3dc;
 	--warn: #df8e1d;
 	--warn-soft: #f3e4c8;
+	/* State INK: the readable member of each state hue. Catppuccin's accents are
+	   tuned for fills, not for 12–14px words on their own washes (--good on
+	   --good-soft is 2.6:1, --warn on --surface is 2.3:1), so every state WORD
+	   uses the ink and every state GRAPHIC (dot, rail, ring, pie slice, progress
+	   fill) keeps the vivid accent. Same hue, darkened until it clears 4.5:1 on
+	   both its own wash and the card. */
+	--good-ink: #27601a; /* 5.9:1 on --good-soft · 6.7:1 on --surface */
+	--warn-ink: #7e5010; /* 5.5:1 on --warn-soft · 6.1:1 on --surface */
+	--bad-ink: #8f0a27; /* 6.8:1 on --bad-soft · 8.3:1 on --surface */
+	/* Accent ink: --accent is a FILL color (Add button, focus ring, active nav
+	   pill). As a 14px word on --accent-soft it is 3.9:1, so nav text uses the
+	   ink. --on-accent is the readable member on top of the accent fill: white
+	   here, mantle in dark (white on Mocha's pale blue is 2.1:1). */
+	--accent-ink: #0a4ed7; /* 5.4:1 on --accent-soft · 6.0:1 on --surface */
+	--on-accent: #ffffff; /* 4.9:1 on --accent */
 	/* Pie palette (Latte accents — deeper for contrast on light bg).
 	   Slot 2 is rosewater, not peach: peach (#fe640b) and yellow (#df8e1d)
 	   read as one orange family, so the warm slot is a pink-red instead. */
@@ -37,14 +75,33 @@
 	--pie-8: #8839ef;
 	--pie-9: #ea76cb;
 	--pie-10: #7287fd;
-	/* Pie diameter: smaller on phones, capped on desktop */
-	--pie-max: 300px;
-}
+	/* Pie diameter: fills the card on phones, capped at 420px from tablet up.
+	   Fluid rather than a per-breakpoint constant so the pie never sits
+	   stranded inside a much wider legend row. */
+	--pie-max: min(100%, 420px);
 
-@media (min-width: 768px) {
-	:root {
-		--pie-max: 420px;
-	}
+	/* Elevation + geometry (see the .card recipe below). */
+	--r-sm: 8px;
+	--r-md: 12px;
+	--r-lg: 16px;
+	/* Light-mode shadows are ink-tinted, never black: black under Latte reads
+	   as mud on the light card surfaces. */
+	--shadow-1: 0 1px 2px color-mix(in srgb, var(--text) 22%, transparent);
+	--shadow-2:
+		0 2px 6px -1px color-mix(in srgb, var(--text) 22%, transparent),
+		0 8px 24px -12px color-mix(in srgb, var(--text) 22%, transparent);
+	--shadow-3: 0 12px 40px -12px color-mix(in srgb, var(--text) 22%, transparent);
+	--hairline: inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+	--ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+	--glass: color-mix(in srgb, var(--surface) 62%, transparent);
+	/* Glow tints: consumed as `0 0 0 3px var(--glow-*)` spread rings. */
+	--glow-good: color-mix(in srgb, var(--good) 22%, transparent);
+	--glow-warn: color-mix(in srgb, var(--warn) 22%, transparent);
+	--glow-bad: color-mix(in srgb, var(--bad) 22%, transparent);
+	/* Signature spring: overshoot; every micro-motion reuses it. */
+	--spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+	/* Sticky header height — the filter table's sticky <thead> offsets by it. */
+	--header-h: 57px;
 }
 
 .dark {
@@ -63,6 +120,14 @@
 	--bad-soft: #452c37;
 	--warn: #f9e2af;
 	--warn-soft: #403d2c;
+	/* Mocha's accents are already light enough to be readable on their own dark
+	   washes, so the ink IS the accent here — the token vocabulary stays the
+	   same in both themes and no component ever has to branch on the theme. */
+	--good-ink: var(--good);
+	--warn-ink: var(--warn);
+	--bad-ink: var(--bad);
+	--accent-ink: var(--accent); /* 5.8:1 on --accent-soft · 7.8:1 on --surface */
+	--on-accent: #11111b; /* 8.9:1 on --accent — mantle, not black */
 	/* Pie palette (Mocha accents — soft pastels for dark bg).
 	   Slot 2 is rosewater, not peach (#fab387): keeps the two warm entries
 	   apart (pale rosewater vs cream yellow), mirroring the light theme. */
@@ -76,32 +141,86 @@
 	--pie-8: #b4befe;
 	--pie-9: #f5c2e7;
 	--pie-10: #cba6f7;
-	--pie-max: 300px;
-}
+	--pie-max: min(100%, 420px);
 
-@media (min-width: 768px) {
-	.dark {
-		--pie-max: 420px;
-	}
+	/* Same geometry, black-based shadows: ink here is nearly white. */
+	--r-sm: 8px;
+	--r-md: 12px;
+	--r-lg: 16px;
+	--shadow-1: 0 1px 2px rgba(0, 0, 0, 0.18);
+	--shadow-2:
+		0 2px 6px -1px rgba(0, 0, 0, 0.22),
+		0 8px 24px -12px rgba(0, 0, 0, 0.3);
+	--shadow-3: 0 12px 40px -12px rgba(0, 0, 0, 0.45);
+	--hairline: inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+	--ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+	--glass: color-mix(in srgb, var(--surface) 62%, transparent);
+	--glow-good: color-mix(in srgb, var(--good) 22%, transparent);
+	--glow-warn: color-mix(in srgb, var(--warn) 22%, transparent);
+	--glow-bad: color-mix(in srgb, var(--bad) 22%, transparent);
+	--spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--header-h: 57px;
 }
 
 html {
 	background: var(--bg);
 	color: var(--text);
 	font-family:
+		ui-sans-serif,
 		system-ui,
 		-apple-system,
+		'SF Pro Text',
+		'Segoe UI Variable',
 		'Segoe UI',
 		Roboto,
 		'Helvetica Neue',
 		sans-serif;
 }
 
+html,
+body {
+	/* The dashboard's pull-to-refresh must not chain into the browser's own
+	   pull-to-refresh / iOS rubber-band — the comment in +page.svelte relies
+	   on this rule existing. */
+	overscroll-behavior-y: none;
+}
+
 body {
 	margin: 0;
 	min-height: 100vh;
-	background: var(--bg);
+	/* Ambient canvas: two large accent-tinted washes (top-left / bottom-right)
+	   plus a 1px dot grid at 2.5% alpha, over the plain --bg fill. Fixed and
+	   never animated — depth, not wallpaper. --bg stays the base fill so the
+	   theme-color meta still matches the canvas. */
+	background:
+		radial-gradient(
+			60rem 40rem at 8% -6%,
+			color-mix(in srgb, var(--accent) 9%, transparent),
+			transparent 70%
+		),
+		radial-gradient(
+			52rem 36rem at 104% 108%,
+			color-mix(in srgb, var(--accent) 6%, transparent),
+			transparent 70%
+		),
+		radial-gradient(color-mix(in srgb, var(--text) 2.5%, transparent) 1px, transparent 1px)
+			0 0 / 22px 22px,
+		var(--bg);
+	background-attachment: fixed;
+	background-repeat: no-repeat, no-repeat, repeat, no-repeat;
 	color: var(--text);
+}
+
+/* Typographic alignment: headings track tighter; numerals are tabular so
+   counters, page numbers and dates never shimmy as the values change. */
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+}
+
+.num {
+	font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -133,6 +252,55 @@ body {
 	animation: shimmer 1.4s ease-in-out infinite;
 }
 
+/*
+ * One-time entrance: fade + 6px rise. `backwards` holds the hidden state
+ * during the stagger delay so blocks appear in sequence (40ms apart) instead
+ * of all at once. It runs on mount only — polling never re-triggers it.
+ */
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.rise {
+	animation: rise 0.45s var(--spring) backwards;
+}
+
+/* Card elevation recipe: border + layered shadow + inner top highlight. */
+.card {
+	position: relative;
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	background: var(--surface);
+	box-shadow: var(--shadow-2), var(--hairline);
+	transition:
+		box-shadow 0.15s ease,
+		transform 0.15s ease;
+}
+
+@media (hover: hover) {
+	.card:hover {
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-3), var(--hairline);
+	}
+}
+
+/*
+ * Focus safety net: every interactive element gets an accent ring even where
+ * a component forgot its own. `:where()` keeps specificity at 0, so the
+ * components' own focus-visible rules always win.
+ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -145,7 +313,9 @@ body {
 /*
  * Feedback polish: a brief press-in on every tappable button (44ms-class
  * micro-interaction). The reduced-motion block above zeroes the transition,
- * so this is a no-op there.
+ * so this is a no-op there. Component styles that transition transform MUST
+ * restate the :active scale — a more specific transition rule would otherwise
+ * replace this one and kill the press feedback.
  */
 button {
 	transition: transform 120ms ease;

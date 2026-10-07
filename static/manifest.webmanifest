@@ -28,8 +28,8 @@
 		}
 	],
 
-	"background_color": "#333333",
-	"theme_color": "#333333",
+	"background_color": "#181825",
+	"theme_color": "#181825",
 	"display": "standalone",
 	"start_url": ".",
 	"prefer_related_applications": true
