@@ -17,7 +17,7 @@
 # everything else into build/), so it needs no force flag.
 
 # ---- Build stage ----
-FROM node:22-bookworm-slim AS build
+FROM node:22.23.4-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --force
@@ -28,7 +28,7 @@ RUN npm run build
 # npm ci --omit=dev installs only the runtime dependencies (SvelteKit's
 # adapter-node bundles everything else into build/), so the final image is
 # small and carries no dev toolchain.
-FROM node:22-bookworm-slim
+FROM node:22.23.4-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./

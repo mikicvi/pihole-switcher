@@ -1,0 +1,29 @@
+version: 2
+
+# The Dockerfile pins its base image by full version (CVE-2026-111497 /
+# Broccoli2Shell: Node below 22.23.4 ships the vulnerable bundled Brotli
+# decoder). A floating `node:22-*` tag would let the runtime drift
+# silently, so the pin is deliberate and Dependabot is what moves it.
+updates:
+    - package-ecosystem: docker
+      directory: /
+      schedule:
+          interval: weekly
+      # Major base-image bumps are held back on purpose: node:24-* images
+      # have no linux/arm/v7 manifest, and this project ships
+      # linux/amd64,linux/arm64,linux/arm/v7. Bump majors by hand.
+      ignore:
+          - dependency-name: node
+            update-types:
+                - version-update:semver-major
+
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+      groups:
+          npm-all-minor-patch:
+              dependency-type: all
+              update-types:
+                  - minor
+                  - patch
