@@ -21,9 +21,16 @@ updates:
       directory: /
       schedule:
           interval: weekly
+      # Group keys accept dependency-type: production|development only (no
+      # `all`), so one group per dependency type.
       groups:
-          npm-all-minor-patch:
-              dependency-type: all
+          npm-production-minor-patch:
+              dependency-type: production
+              update-types:
+                  - minor
+                  - patch
+          npm-development-minor-patch:
+              dependency-type: development
               update-types:
                   - minor
                   - patch
